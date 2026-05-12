@@ -1,0 +1,61 @@
+<!-- pages/notifications/notifications.wxml -->
+<wxs src="../../utils/format.wxs" module="fmt" />
+<view class="container">
+
+  <!-- 分类 Tab 栏 -->
+  <view class="tab-bar">
+    <view
+      wx:for="{{tabs}}"
+      wx:key="key"
+      class="tab-item {{ activeTab === item.key ? 'active' : '' }}"
+      bindtap="onTabChange"
+      data-tab="{{item.key}}"
+    >
+      <text class="tab-label">{{ item.label }}</text>
+      <text class="tab-count" wx:if="{{ tabCounts[item.key] > 0 }}">{{ tabCounts[item.key] }}</text>
+    </view>
+  </view>
+
+  <!-- 全部已读按钮 -->
+  <view wx:if="{{ unreadCount > 0 }}" class="mark-read-bar" bindtap="markAllRead">
+    <text class="mark-read-text">全部已读</text>
+  </view>
+
+  <!-- 骨架屏 -->
+  <block wx:if="{{isLoading}}">
+    <view class="card skeleton-card" wx:for="{{[1,2,3]}}" wx:key="index">
+      <view class="skeleton skeleton-title"></view>
+      <view class="skeleton skeleton-line"></view>
+    </view>
+  </block>
+
+  <!-- 空状态 -->
+  <view wx:elif="{{filteredList.length === 0}}" class="empty">
+    <text class="empty-icon">🔔</text>
+    <text class="empty-text" style="font-size:32rpx;font-weight:500;color:var(--text-primary);margin-bottom:12rpx;">{{ activeTab === 'all' ? '暂无新消息' : '该分类暂无消息' }}</text>
+    <text class="empty-text">{{ activeTab === 'all' ? '参与组局后，动态会在这里显示' : '切换其他分类看看' }}</text>
+  </view>
+
+  <!-- 通知列表 -->
+  <block wx:else>
+    <view class="notif-item {{item.isRead === 0 ? 'unread' : ''}}" wx:for="{{filteredList}}" wx:key="id" bindtap="goToTeam" data-teamid="{{item.teamId}}">
+      <view class="notif-icon">
+        <text wx:if="{{item.type === 'join'}}">✅</text>
+        <text wx:elif="{{item.type === 'quit'}}">👋</text>
+        <text wx:elif="{{item.type === 'comment'}}">💬</text>
+        <text wx:elif="{{item.type === 'reply'}}">↩️</text>
+        <text wx:elif="{{item.type === 'update'}}">✏️</text>
+        <text wx:elif="{{item.type === 'reminder'}}">⏰</text>
+        <text wx:elif="{{item.type === 'cancelled'}}">❌</text>
+        <text wx:elif="{{item.type === 'ended'}}">🏁</text>
+        <text wx:else>📢</text>
+      </view>
+      <view class="notif-body">
+        <text class="notif-title">{{item.title}}</text>
+        <text class="notif-content">{{item.content}}</text>
+        <text class="notif-time">{{fmt.relativeTime(item.createdAt)}}</text>
+      </view>
+      <view wx:if="{{item.isRead === 0}}" class="unread-dot"></view>
+    </view>
+  </block>
+</view>

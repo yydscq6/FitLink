@@ -1,0 +1,33 @@
+{
+  "name": "sport-miniprogram-server",
+  "version": "1.0.0",
+  "description": "运动组局小程序后端服务",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "jest --forceExit --detectOpenHandles --verbose",
+    "test:unit": "jest tests/security.test.js --verbose",
+    "test:api": "jest tests/api.test.js --forceExit --detectOpenHandles --verbose"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.0",
+    "express": "^4.18.0",
+    "express-rate-limit": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
+    "multer": "^2.1.1",
+    "sql.js": "^1.14.1",
+    "uuid": "^9.0.0",
+    "wa-sqlite": "^1.0.0",
+    "winston": "^3.19.0",
+    "ws": "^8.20.0",
+    "xss": "^1.0.15"
+  },
+  "devDependencies": {
+    "jest": "^30.4.1",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2"
+  }
+}

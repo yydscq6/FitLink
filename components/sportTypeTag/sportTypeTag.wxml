@@ -1,0 +1,4 @@
+<!-- components/sportTypeTag/sportTypeTag.wxml -->
+<view class="sport-tag {{type}}">
+  {{text}}
+</view>

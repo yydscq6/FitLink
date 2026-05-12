@@ -1,0 +1,129 @@
+/* pages/userProfile/userProfile.wxss */
+.profile-page { padding-bottom: 40rpx; }
+
+/* 头部卡片 */
+.profile-header {
+  display: flex; align-items: center;
+  padding: 56rpx 32rpx 44rpx;
+  background: linear-gradient(145deg, #059669 0%, #10b981 40%, #06b6d4 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-header::after {
+  content: '';
+  position: absolute;
+  top: -60rpx;
+  right: -60rpx;
+  width: 300rpx;
+  height: 300rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.profile-avatar {
+  width: 136rpx; height: 136rpx; border-radius: 50%;
+  border: 4rpx solid rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.2);
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+}
+.profile-info { margin-left: 28rpx; flex: 1; }
+.profile-name { font-size: 38rpx; font-weight: 800; color: #fff; display: block; letter-spacing: 1rpx; }
+.profile-credit { margin-top: 12rpx; display: flex; align-items: center; gap: 8rpx; }
+.credit-label { font-size: 22rpx; color: rgba(255,255,255,0.8); }
+.credit-val {
+  font-size: 26rpx; font-weight: 700;
+  background: rgba(255,255,255,0.2);
+  padding: 4rpx 18rpx; border-radius: 20rpx;
+  color: #fff;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.credit-excellent { color: #fff; background: rgba(255,215,0,0.35); }
+.credit-good { color: #fff; background: rgba(255,255,255,0.28); }
+.credit-normal { color: #fff; background: rgba(255,255,255,0.18); }
+.credit-warning { color: #fff; background: rgba(255,165,0,0.3); }
+.credit-poor { color: #fff; background: rgba(255,0,0,0.3); }
+
+/* 数据统计 */
+.stats-bar {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card);
+  padding: 32rpx 0;
+  margin: -1rpx 24rpx 28rpx;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  position: relative; z-index: 1;
+}
+.stat-item { text-align: center; flex: 1; }
+.stat-num { display: block; font-size: 44rpx; font-weight: 900; color: var(--text-primary); }
+.stat-label { display: block; font-size: 22rpx; color: var(--text-hint); margin-top: 4rpx; letter-spacing: 1rpx; }
+.stat-divider { width: 1rpx; height: 48rpx; background: var(--border-light); }
+
+/* 运动偏好 */
+.prefs-row { display: flex; flex-wrap: wrap; gap: 12rpx; }
+.pref-tag {
+  font-size: 24rpx; color: var(--primary-color);
+  background: rgba(5, 150, 105, 0.06);
+  padding: 8rpx 22rpx; border-radius: 20rpx;
+  font-weight: 600;
+  border: 1rpx solid rgba(5, 150, 105, 0.1);
+}
+
+/* Tab 栏 */
+.tab-bar {
+  display: flex; margin: 0 24rpx 24rpx;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+.tab-item {
+  flex: 1; text-align: center;
+  padding: 26rpx 0;
+  position: relative;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+.tab-item.active {
+  color: var(--primary-color);
+}
+.tab-item.active::after {
+  content: "";
+  position: absolute; bottom: 0; left: 30%; right: 30%;
+  height: 4rpx; border-radius: 2rpx;
+  background: var(--primary-color);
+}
+.tab-text { font-size: 26rpx; font-weight: 600; color: inherit; letter-spacing: 0.5rpx; }
+.tab-item:not(.active) .tab-text { color: var(--text-secondary); }
+
+/* 组局卡片 */
+.team-list { padding: 0 24rpx; }
+.team-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 28rpx; margin-bottom: 20rpx;
+  border: 1rpx solid rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out);
+  animation: fadeInUp 0.4s var(--ease-out) both;
+}
+.team-card:active { transform: scale(0.98); box-shadow: var(--shadow-soft); }
+.team-card-top { display: flex; align-items: center; gap: 12rpx; margin-bottom: 12rpx; }
+.team-sport-badge { font-size: 38rpx; }
+.team-card-title { font-size: 30rpx; font-weight: 600; color: var(--text-primary); }
+.team-status-tag {
+  font-size: 20rpx; padding: 4rpx 14rpx; border-radius: 12rpx;
+  font-weight: 600;
+}
+.status-recruiting { color: #059669; background: rgba(5, 150, 105, 0.08); }
+.status-ongoing { color: #d97706; background: rgba(217, 119, 6, 0.08); }
+.status-ended { color: #94a3b8; background: rgba(148, 163, 184, 0.12); }
+.status-cancelled { color: #ef4444; background: rgba(239, 68, 68, 0.08); }
+.team-card-info { display: flex; gap: 20rpx; margin-bottom: 8rpx; }
+.team-card-venue, .team-card-time { font-size: 24rpx; color: var(--text-hint); }
+.team-card-meta { margin-top: 4rpx; }
+.team-card-members { font-size: 22rpx; color: var(--text-hint); }
+
+/* 空状态 */
+.empty-section { padding: 100rpx 0; text-align: center; }
+.empty-section-text { font-size: 26rpx; color: var(--text-hint); letter-spacing: 1rpx; }

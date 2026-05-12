@@ -1,0 +1,67 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/teamDetail/teamDetail",
+    "pages/publish/publish",
+    "pages/my/my",
+    "pages/myTeams/myTeams",
+    "pages/joinedTeams/joinedTeams",
+    "pages/favorites/favorites",
+    "pages/settings/settings",
+    "pages/notifications/notifications",
+    "pages/editTeam/editTeam",
+    "pages/userProfile/userProfile",
+    "pages/agreement/agreement"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTitleText": "运动组局",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f8fa",
+    "navigationStyle": "default"
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "获取您的位置信息，以便推荐附近的运动组局"
+    },
+    "scope.writePhotosAlbum": {
+      "desc": "保存组局海报到相册，方便分享给朋友"
+    }
+  },
+  "requiredPrivateInfos": ["chooseLocation", "getLocation"],
+  "subPackages": [],
+  "preloadRule": {},
+  "tabBar": {
+    "color": "#94a3b8",
+    "selectedColor": "#059669",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "assets/tabbar/home.png",
+        "selectedIconPath": "assets/tabbar/home-active.png"
+      },
+      {
+        "pagePath": "pages/publish/publish",
+        "text": "发布",
+        "iconPath": "assets/tabbar/publish.png",
+        "selectedIconPath": "assets/tabbar/publish-active.png"
+      },
+      {
+        "pagePath": "pages/my/my",
+        "text": "我的",
+        "iconPath": "assets/tabbar/my.png",
+        "selectedIconPath": "assets/tabbar/my-active.png"
+      }
+    ]
+  },
+  "usingComponents": {
+    "sportTypeTag": "/components/sportTypeTag/sportTypeTag"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

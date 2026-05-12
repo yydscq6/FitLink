@@ -1,0 +1,116 @@
+<!-- pages/my/my.wxml -->
+<view class="container">
+  <!-- 用户信息卡片 -->
+  <view class="user-card">
+    <view class="user-card-bg"></view>
+    <view class="user-card-inner">
+      <!-- 头像 -->
+      <button wx:if="{{isLogin}}" class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+        <view class="avatar-ring">
+          <image class="avatar" src="{{userInfo.avatarUrl || '/assets/default-avatar.png'}}" mode="aspectFill" />
+          <view class="avatar-edit-hint">
+            <text class="avatar-edit-icon">📷</text>
+          </view>
+        </view>
+      </button>
+      <view wx:else class="avatar-ring">
+        <image class="avatar" src="{{userInfo.avatarUrl || '/assets/default-avatar.png'}}" mode="aspectFill" />
+      </view>
+
+      <!-- 昵称 -->
+      <view wx:if="{{isLogin}}" class="nickname-row">
+        <input class="nickname-input" type="nickname" value="{{userInfo.nickname || userInfo.nickName || '微信用户'}}" placeholder="点击设置昵称" bindinput="onNicknameInput" bindblur="onSaveNickname" />
+      </view>
+      <text wx:else class="nickname">{{userInfo.nickname || userInfo.nickName || '未登录'}}</text>
+
+      <!-- 新用户引导 -->
+      <view wx:if="{{isLogin && showProfileGuide}}" class="profile-guide" bindtap="onDismissGuide">
+        <text class="profile-guide-text">👆 点击头像和昵称可自定义哦</text>
+      </view>
+
+      <!-- 信用分 -->
+      <view wx:if="{{isLogin}}" class="credit-pill">
+        <text class="credit-score credit-{{creditLevel}}">{{userInfo.creditScore || 100}}</text>
+        <text class="credit-label">
+          <text wx:if="{{creditLevel === 'excellent'}}">信用优秀</text>
+          <text wx:elif="{{creditLevel === 'good'}}">信用良好</text>
+          <text wx:elif="{{creditLevel === 'normal'}}">信用正常</text>
+          <text wx:elif="{{creditLevel === 'warning'}}">信用注意</text>
+          <text wx:else>信用较低</text>
+        </text>
+      </view>
+
+      <button wx:if="{{!isLogin}}" class="login-btn" bindtap="onLogin">点击登录</button>
+    </view>
+  </view>
+
+  <!-- 功能列表 -->
+  <view class="menu-group">
+    <view class="menu-item" bindtap="onNotifications">
+      <view class="menu-icon-wrap">
+        <text class="menu-icon">🔔</text>
+      </view>
+      <text class="menu-text flex-1">消息通知</text>
+      <text wx:if="{{unreadCount > 0}}" class="badge">{{unreadCount > 99 ? '99+' : unreadCount}}</text>
+      <text class="menu-arrow">›</text>
+    </view>
+    <view class="menu-item" bindtap="onMyTeams">
+      <view class="menu-icon-wrap">
+        <text class="menu-icon">📋</text>
+      </view>
+      <text class="menu-text flex-1">我的组局</text>
+      <text class="menu-arrow">›</text>
+    </view>
+    <view class="menu-item" bindtap="onMyJoins">
+      <view class="menu-icon-wrap">
+        <text class="menu-icon">🤝</text>
+      </view>
+      <text class="menu-text flex-1">我加入的</text>
+      <text class="menu-arrow">›</text>
+    </view>
+    <view class="menu-item" bindtap="onFavorites">
+      <view class="menu-icon-wrap">
+        <text class="menu-icon">⭐</text>
+      </view>
+      <text class="menu-text flex-1">我的收藏</text>
+      <text class="menu-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 运动偏好 -->
+  <view class="menu-group" wx:if="{{isLogin}}">
+    <view class="section-header">
+      <text class="section-title">运动偏好</text>
+      <text class="section-hint">选择你擅长的运动，方便组局匹配</text>
+    </view>
+    <view class="sport-prefs-grid">
+      <view
+        wx:for="{{sportPrefOptions}}"
+        wx:key="value"
+        class="sport-pref-item {{ item.selected ? 'active' : '' }}"
+        bindtap="onToggleSportPref"
+        data-value="{{item.value}}"
+      >
+        <text class="sport-pref-emoji">{{item.emoji}}</text>
+        <text class="sport-pref-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="menu-group">
+    <view class="menu-item" bindtap="onSettings">
+      <view class="menu-icon-wrap">
+        <text class="menu-icon">⚙️</text>
+      </view>
+      <text class="menu-text flex-1">设置</text>
+      <text class="menu-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 退出登录 -->
+  <view wx:if="{{isLogin}}" class="logout-wrap">
+    <view class="logout-btn" bindtap="onLogout">
+      <text class="logout-text">退出登录</text>
+    </view>
+  </view>
+</view>

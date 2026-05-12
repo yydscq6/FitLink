@@ -1,0 +1,39 @@
+<!-- pages/settings/settings.wxml -->
+<view class="container">
+  <view class="menu-list">
+    <view class="menu-item" bindtap="onClearCache">
+      <text class="menu-text">清除缓存</text>
+      <text class="menu-value">{{cacheSize}}</text>
+      <text class="menu-arrow">›</text>
+    </view>
+    <view class="menu-item" bindtap="onFeedback">
+      <text class="menu-text">意见反馈</text>
+      <text class="menu-arrow">›</text>
+    </view>
+    <view class="menu-item" bindtap="onAbout">
+      <text class="menu-text">关于</text>
+      <text class="menu-value">v{{version}}</text>
+      <text class="menu-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 法律条款 -->
+  <view class="menu-list">
+    <view class="menu-item" bindtap="onPrivacy">
+      <text class="menu-text">隐私政策</text>
+      <text class="menu-arrow">›</text>
+    </view>
+    <view class="menu-item" bindtap="onTerms">
+      <text class="menu-text">用户协议</text>
+      <text class="menu-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 危险操作 -->
+  <view class="menu-list" wx:if="{{isLogin}}">
+    <view class="menu-item danger" bindtap="onDeleteAccount">
+      <text class="menu-text danger-text">注销账号</text>
+      <text class="menu-arrow">›</text>
+    </view>
+  </view>
+</view>

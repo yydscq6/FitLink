@@ -1,0 +1,113 @@
+<!-- pages/userProfile/userProfile.wxml -->
+<wxs src="../../utils/format.wxs" module="fmt" />
+
+<!-- 加载中 -->
+<view wx:if="{{ isLoading }}" class="loading-container">
+  <view class="skeleton skeleton-title"></view>
+  <view class="skeleton skeleton-line"></view>
+  <view class="skeleton skeleton-line short"></view>
+</view>
+
+<!-- 加载失败 -->
+<view wx:elif="{{ loadError }}" class="error-container">
+  <text class="error-icon">😵</text>
+  <text class="error-text">{{ loadError }}</text>
+  <view class="empty-action mt-24" bindtap="onRetry">
+    <text class="empty-action-text">重新加载</text>
+  </view>
+</view>
+
+<!-- 用户资料 -->
+<view wx:elif="{{ userInfo }}" class="profile-page">
+
+  <!-- 头部卡片 -->
+  <view class="profile-header">
+    <image class="profile-avatar" src="{{ userInfo.avatarUrl || '/assets/default-avatar.png' }}" mode="aspectFill" />
+    <view class="profile-info">
+      <text class="profile-name">{{ userInfo.nickname }}</text>
+      <view class="profile-credit">
+        <text class="credit-val credit-{{ getCreditLevel(userInfo.creditScore) }}">{{ userInfo.creditScore }}</text>
+        <text class="credit-label">信用分</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 数据统计 -->
+  <view class="stats-bar">
+    <view class="stat-item">
+      <text class="stat-num">{{ stats.createdCount }}</text>
+      <text class="stat-label">发起组局</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-num">{{ stats.joinedCount }}</text>
+      <text class="stat-label">参加组局</text>
+    </view>
+  </view>
+
+  <!-- 运动偏好 -->
+  <view class="section-card" wx:if="{{ sportPrefs.length > 0 }}">
+    <view class="section-label">运动偏好</view>
+    <view class="prefs-row">
+      <text class="pref-tag" wx:for="{{ sportPrefs }}" wx:key="*this">{{ item }}</text>
+    </view>
+  </view>
+
+  <!-- Tab 切换 -->
+  <view class="tab-bar">
+    <view class="tab-item {{ activeTab === 'created' ? 'active' : '' }}" data-tab="created" bindtap="onTabChange">
+      <text class="tab-text">发起的组局 ({{ stats.createdCount }})</text>
+    </view>
+    <view class="tab-item {{ activeTab === 'joined' ? 'active' : '' }}" data-tab="joined" bindtap="onTabChange">
+      <text class="tab-text">参加的组局 ({{ stats.joinedCount }})</text>
+    </view>
+  </view>
+
+  <!-- 发起的组局列表 -->
+  <view wx:if="{{ activeTab === 'created' }}">
+    <view wx:if="{{ createdTeams.length > 0 }}" class="team-list">
+      <view class="team-card" wx:for="{{ createdTeams }}" wx:key="_id" data-id="{{ item._id }}" bindtap="goToTeam">
+        <view class="team-card-top">
+          <text class="team-sport-badge">{{ item.sportEmoji }}</text>
+          <text class="team-card-title flex-1">{{ item.title }}</text>
+          <text class="team-status-tag status-{{ item.status }}">{{ item.statusName }}</text>
+        </view>
+        <view class="team-card-info">
+          <text class="team-card-venue">{{ item.venueName || '待定' }}</text>
+          <text class="team-card-time">{{ fmt.formatDateTime(item.startTime) }}</text>
+        </view>
+        <view class="team-card-meta">
+          <text class="team-card-members">{{ item.currentMembers }}/{{ item.maxMembers }}人</text>
+        </view>
+      </view>
+    </view>
+    <view wx:else class="empty-section">
+      <text class="empty-section-text">还没有发起过组局</text>
+    </view>
+  </view>
+
+  <!-- 参加的组局列表 -->
+  <view wx:if="{{ activeTab === 'joined' }}">
+    <view wx:if="{{ joinedTeams.length > 0 }}" class="team-list">
+      <view class="team-card" wx:for="{{ joinedTeams }}" wx:key="_id" data-id="{{ item._id }}" bindtap="goToTeam">
+        <view class="team-card-top">
+          <text class="team-sport-badge">{{ item.sportEmoji }}</text>
+          <text class="team-card-title flex-1">{{ item.title }}</text>
+          <text class="team-status-tag status-{{ item.status }}">{{ item.statusName }}</text>
+        </view>
+        <view class="team-card-info">
+          <text class="team-card-venue">{{ item.venueName || '待定' }}</text>
+          <text class="team-card-time">{{ fmt.formatDateTime(item.startTime) }}</text>
+        </view>
+        <view class="team-card-meta">
+          <text class="team-card-members">{{ item.currentMembers }}/{{ item.maxMembers }}人</text>
+        </view>
+      </view>
+    </view>
+    <view wx:else class="empty-section">
+      <text class="empty-section-text">还没有参加过组局</text>
+    </view>
+  </view>
+
+  <view style="height: 60rpx;"></view>
+</view>

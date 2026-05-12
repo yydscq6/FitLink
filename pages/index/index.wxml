@@ -1,0 +1,362 @@
+<!--
+  首页 index.wxml
+  功能：定位 → 筛选运动类型 → 展示附近组局列表 → 点击进入详情
+-->
+<wxs src="../../utils/format.wxs" module="fmt" />
+
+<!-- ==================== 定位栏 ==================== -->
+<view class="location-bar" bindtap="onChooseLocation">
+  <view class="location-icon-wrap">
+    <text class="location-icon">📍</text>
+  </view>
+  <view class="location-text flex-1">
+    <text class="location-label">当前位置</text>
+    <text class="location-name">{{ locationName || '正在获取位置...' }}</text>
+  </view>
+  <view class="location-action" bindtap="onRefreshLocation">
+    <text class="action-text">切换</text>
+  </view>
+</view>
+
+<!-- ==================== 搜索栏 ==================== -->
+<view class="search-bar">
+  <view class="search-input-wrap {{isSearchFocused ? 'focused' : ''}}">
+    <text class="search-icon">🔍</text>
+    <input
+      class="search-input"
+      placeholder="搜索组局标题或地点"
+      placeholder-class="search-placeholder"
+      value="{{searchKeyword}}"
+      bindinput="onSearchInput"
+      bindfocus="onSearchFocus"
+      bindblur="onSearchBlur"
+      bindconfirm="onSearchConfirm"
+      confirm-type="search"
+    />
+    <view wx:if="{{searchKeyword}}" class="search-clear" bindtap="onClearSearch">
+      <text class="clear-icon">✕</text>
+    </view>
+  </view>
+  <view class="view-toggle" bindtap="onToggleView">
+    <text class="toggle-icon">{{viewMode === 'list' ? '🗺️' : '📋'}}</text>
+  </view>
+</view>
+
+<!-- ==================== 筛选栏 ==================== -->
+<scroll-view class="filter-bar" scroll-x enable-flex>
+  <view class="filter-scroll-inner">
+    <view
+      class="filter-tag {{ currentSportType === 'all' ? 'active' : '' }}"
+      bindtap="onSportTypeChange"
+      data-type="all"
+    >
+      全部
+    </view>
+    <view
+      wx:for="{{sportFilterList}}"
+      wx:key="value"
+      class="filter-tag {{ currentSportType === item.value ? 'active' : '' }}"
+      bindtap="onSportTypeChange"
+      data-type="{{item.value}}"
+    >
+      {{item.emoji}} {{item.name}}
+    </view>
+    <view
+      class="filter-tag advanced-btn {{ showAdvancedFilter ? 'active' : '' }}"
+      bindtap="onToggleAdvancedFilter"
+    >
+      ⚙️ 筛选
+    </view>
+  </view>
+</scroll-view>
+
+<!-- ==================== 高级筛选面板 ==================== -->
+<view class="advanced-filter-panel {{ showAdvancedFilter ? 'show' : '' }}">
+  <!-- 时间筛选 -->
+  <view class="filter-section">
+    <text class="filter-section-label">活动时间</text>
+    <view class="filter-chips">
+      <view class="filter-chip {{ timeFilter === 'all' ? 'active' : '' }}" bindtap="onTimeFilterChange" data-value="all">不限</view>
+      <view class="filter-chip {{ timeFilter === 'today' ? 'active' : '' }}" bindtap="onTimeFilterChange" data-value="today">今天</view>
+      <view class="filter-chip {{ timeFilter === 'tomorrow' ? 'active' : '' }}" bindtap="onTimeFilterChange" data-value="tomorrow">明天</view>
+      <view class="filter-chip {{ timeFilter === 'week' ? 'active' : '' }}" bindtap="onTimeFilterChange" data-value="week">本周内</view>
+    </view>
+  </view>
+  <!-- 标签筛选 -->
+  <view class="filter-section">
+    <text class="filter-section-label">组局标签</text>
+    <view class="filter-chips">
+      <view class="filter-chip {{ filterTag === '' ? 'active' : '' }}" bindtap="onTagFilterChange" data-value="">不限</view>
+      <view class="filter-chip {{ filterTag === '新手友好' ? 'active' : '' }}" bindtap="onTagFilterChange" data-value="新手友好">新手友好</view>
+      <view class="filter-chip {{ filterTag === '高手局' ? 'active' : '' }}" bindtap="onTagFilterChange" data-value="高手局">高手局</view>
+      <view class="filter-chip {{ filterTag === 'AA制' ? 'active' : '' }}" bindtap="onTagFilterChange" data-value="AA制">AA制</view>
+      <view class="filter-chip {{ filterTag === '免费' ? 'active' : '' }}" bindtap="onTagFilterChange" data-value="免费">免费</view>
+      <view class="filter-chip {{ filterTag === '周末常约' ? 'active' : '' }}" bindtap="onTagFilterChange" data-value="周末常约">周末常约</view>
+    </view>
+  </view>
+  <!-- 其他筛选 -->
+  <view class="filter-section">
+    <text class="filter-section-label">其他条件</text>
+    <view class="filter-input-row">
+      <text class="filter-input-label">最少剩余名额</text>
+      <input class="filter-mini-input" type="number" placeholder="不限" value="{{minSpots}}" bindinput="onMinSpotsInput" />
+      <text class="filter-input-unit">人</text>
+    </view>
+    <view class="filter-input-row">
+      <text class="filter-input-label">最大距离</text>
+      <input class="filter-mini-input" type="digit" placeholder="不限" value="{{maxDistance}}" bindinput="onMaxDistanceInput" />
+      <text class="filter-input-unit">km</text>
+    </view>
+  </view>
+  <!-- 操作按钮 -->
+  <view class="filter-actions">
+    <view class="filter-reset-btn" bindtap="onResetAdvancedFilter">
+      <text class="filter-reset-text">重置</text>
+    </view>
+    <view class="filter-apply-btn" bindtap="onApplyAdvancedFilter">
+      <text class="filter-apply-text">应用筛选</text>
+    </view>
+  </view>
+</view>
+
+<!-- ==================== 地图视图 ==================== -->
+<view wx:if="{{ viewMode === 'map' }}" class="map-container {{ showAdvancedFilter ? 'filter-open' : '' }}">
+  <map
+    id="teamMap"
+    class="team-map"
+    longitude="{{ mapCenter.longitude }}"
+    latitude="{{ mapCenter.latitude }}"
+    scale="{{ mapScale }}"
+    markers="{{ mapMarkers }}"
+    show-location
+    enable-zoom
+    enable-scroll
+    bindcallouttap="onCalloutTap"
+    bindmarkertap="onMarkerTap"
+  />
+  <!-- 地图底部提示（未选中时） -->
+  <view wx:if="{{ !selectedTeam }}" class="map-hint">
+    <text class="map-hint-text">点击标记查看详情 · 共 {{ teamList.length }} 个组局</text>
+  </view>
+  <!-- 选中组局底部卡片 -->
+  <view wx:if="{{ selectedTeam }}" class="map-card-mask" bindtap="onCloseSelectedCard">
+    <view class="map-selected-card" catchtap="">
+      <!-- 顶部拖拽条 -->
+      <view class="map-card-handle"></view>
+      <view class="map-card-body" bindtap="onGoToDetail" data-id="{{ selectedTeam._id }}">
+        <!-- 运动标签 + 距离 -->
+        <view class="map-card-top">
+          <view class="sport-badge sport-badge-{{ selectedTeam.sportType }}">
+            <text class="badge-emoji">{{ fmt.sportEmoji(selectedTeam.sportType) }}</text>
+            <text class="badge-text">{{ fmt.sportName(selectedTeam.sportType) }}</text>
+          </view>
+          <text class="map-card-distance">{{ selectedTeam.distanceText }}</text>
+        </view>
+        <!-- 标题 -->
+        <view class="map-card-title">{{ selectedTeam.title }}</view>
+        <!-- 标签 -->
+        <view class="map-card-tags" wx:if="{{ selectedTeam.tags && selectedTeam.tags.length > 0 }}">
+          <text class="team-tag" wx:for="{{ selectedTeam.tags }}" wx:key="*this" wx:for-item="tag">{{ tag }}</text>
+        </view>
+        <!-- 信息 -->
+        <view class="map-card-info">
+          <text class="map-card-info-item">📍 {{ selectedTeam.venueName }}</text>
+          <text class="map-card-info-item">🕐 {{ fmt.timeRange(selectedTeam.startTime, selectedTeam.endTime) }}</text>
+        </view>
+        <!-- 底部：队长 + 人数 + 按钮 -->
+        <view class="map-card-bottom">
+          <view class="map-card-leader">
+            <image class="map-card-avatar" src="{{ selectedTeam.leaderId.avatarUrl || '/assets/default-avatar.png' }}" mode="aspectFill" />
+            <text class="map-card-leader-name">{{ selectedTeam.leaderId.nickname }}</text>
+          </view>
+          <view class="map-card-right">
+            <view class="map-card-members">
+              <view class="member-bar">
+                <view class="member-fill" style="width: {{ (selectedTeam.currentMembers / selectedTeam.maxMembers * 100) + '%' }}"></view>
+              </view>
+              <text class="member-num">{{ selectedTeam.currentMembers }}/{{ selectedTeam.maxMembers }}</text>
+            </view>
+            <view class="map-card-btn">
+              <text class="map-card-btn-text">查看详情 →</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- ==================== 列表视图 ==================== -->
+<scroll-view
+  wx:if="{{ viewMode === 'list' }}"
+  class="team-list {{ showAdvancedFilter ? 'filter-open' : '' }}"
+  scroll-y
+  enable-back-to-top
+  bindscrolltolower="onLoadMore"
+  bindrefresherrefresh="onPullRefresh"
+  refresher-enabled
+  refresher-triggered="{{ isRefreshing }}"
+>
+
+  <!-- ——— 骨架屏 Loading ——— -->
+  <block wx:if="{{ isLoading && teamList.length === 0 }}">
+    <view class="skeleton-card" wx:for="{{ [1,2,3] }}" wx:key="index">
+      <view class="skeleton skeleton-badge"></view>
+      <view class="skeleton skeleton-title"></view>
+      <view class="skeleton skeleton-line"></view>
+      <view class="skeleton skeleton-line short"></view>
+    </view>
+  </block>
+
+  <!-- ——— 错误状态 ——— -->
+  <block wx:elif="{{ !isLoading && loadError }}">
+    <view class="empty">
+      <text class="empty-icon">😵</text>
+      <text class="empty-text">{{ loadError }}</text>
+      <view class="empty-action mt-32" bindtap="onRetry">
+        <text class="empty-action-text">重新加载</text>
+      </view>
+    </view>
+  </block>
+
+  <!-- ——— 搜索无结果 ——— -->
+  <block wx:elif="{{ !isLoading && searchKeyword && teamList.length > 0 && filteredList.length === 0 }}">
+    <view class="empty">
+      <text class="empty-icon">🔍</text>
+      <text class="empty-text" style="font-size:30rpx;font-weight:500;color:var(--text-primary);margin-bottom:8rpx;">未找到相关组局</text>
+      <text class="empty-text">试试其他关键词</text>
+    </view>
+  </block>
+
+  <!-- ——— 空状态 ——— -->
+  <block wx:elif="{{ !isLoading && teamList.length === 0 && !loadError }}">
+    <view class="empty">
+      <text class="empty-icon">🏀</text>
+      <text class="empty-text" style="font-size:32rpx;font-weight:500;color:var(--text-primary);margin-bottom:12rpx;">附近暂无组局</text>
+      <text class="empty-text">成为第一个发起人吧</text>
+      <view class="empty-action mt-32" bindtap="goToPublish">
+        <text class="empty-action-text">发布组局</text>
+      </view>
+    </view>
+  </block>
+
+  <!-- ——— 智能推荐标识 ——— -->
+  <view wx:if="{{ recommendMode && !searchKeyword && teamList.length > 0 }}" class="recommend-header">
+    <text class="recommend-icon">✨</text>
+    <text class="recommend-text">智能推荐 · 综合偏好、距离与时间排序</text>
+  </view>
+
+  <!-- ——— 组局列表 ——— -->
+  <block wx:if="{{ !isLoading && !loadError && (searchKeyword ? filteredList.length > 0 : teamList.length > 0) }}">
+    <view
+      class="team-card"
+      wx:for="{{ searchKeyword ? filteredList : teamList }}"
+      wx:key="_id"
+      data-id="{{ item._id }}"
+    >
+      <!-- 左侧色条 -->
+      <view class="team-card-accent sport-accent-{{ item.sportType }}"></view>
+
+      <view class="team-card-content" bindtap="goToTeamDetail" data-id="{{ item._id }}">
+        <!-- 封面图 -->
+        <image wx:if="{{ item.coverImage }}" class="team-card-cover" src="{{ item.coverImage }}" mode="aspectFill" lazy-load />
+
+        <!-- 顶部行：运动标签 + 距离 -->
+        <view class="team-card-top">
+          <view class="sport-badge sport-badge-{{ item.sportType }}">
+            <text class="badge-emoji">{{ fmt.sportEmoji(item.sportType) }}</text>
+            <text class="badge-text">{{ fmt.sportName(item.sportType) }}</text>
+          </view>
+          <text class="distance-text">{{ item.distanceText }}</text>
+        </view>
+
+        <!-- 标题 -->
+        <view class="team-card-title">{{ item.title }}</view>
+
+        <!-- 标签 -->
+        <view class="team-card-tags" wx:if="{{ item.tags && item.tags.length > 0 }}">
+          <text class="team-tag" wx:for="{{ item.tags }}" wx:key="*this" wx:for-item="tag">{{ tag }}</text>
+        </view>
+
+        <!-- 信息行 -->
+        <view class="team-card-info">
+          <view class="info-item">
+            <text class="info-dot">·</text>
+            <text class="info-label">{{ item.venueName }}</text>
+          </view>
+          <view class="info-item">
+            <text class="info-dot">·</text>
+            <text class="info-label">{{ fmt.timeRange(item.startTime, item.endTime) }}</text>
+          </view>
+        </view>
+
+        <!-- 底部行：队长 + 人数 -->
+        <view class="team-card-bottom">
+          <view class="leader-row">
+            <image class="leader-avatar" src="{{ item.leaderId.avatarUrl || '/assets/default-avatar.png' }}" mode="aspectFill" lazy-load />
+            <text class="leader-name">{{ item.leaderId.nickname }}</text>
+          </view>
+          <view class="member-row">
+            <view class="member-bar">
+              <view class="member-fill" style="width: {{ (item.currentMembers / item.maxMembers * 100) + '%' }}"></view>
+            </view>
+            <text class="member-num">{{ item.currentMembers }}/{{ item.maxMembers }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 非招募状态角标 -->
+      <view
+        class="status-ribbon status-{{ item.status }}"
+        wx:if="{{ item.status !== 'recruiting' }}"
+      >
+        {{ fmt.teamStatus(item.status) }}
+      </view>
+
+      <!-- 收藏按钮 -->
+      <view
+        class="fav-btn {{ favoriteIds.indexOf(item._id) > -1 ? 'active' : '' }}"
+        catchtap="onToggleFavorite"
+        data-id="{{ item._id }}"
+      >
+        <text class="fav-icon">{{ favoriteIds.indexOf(item._id) > -1 ? '❤️' : '🤍' }}</text>
+      </view>
+    </view>
+
+    <!-- 加载更多 -->
+    <view class="load-more" wx:if="{{ teamList.length > 0 }}">
+      <text wx:if="{{ hasMore && !isLoadingMore }}" class="load-more-text">上滑加载更多</text>
+      <text wx:elif="{{ isLoadingMore }}" class="load-more-text">加载中...</text>
+      <text wx:elif="{{ !hasMore && teamList.length > 0 }}" class="load-more-text done">— 已到底了 —</text>
+    </view>
+  </block>
+
+</scroll-view>
+
+<!-- ==================== 悬浮发布按钮 ==================== -->
+<view
+  class="fab"
+  bindtap="goToPublish"
+  wx:if="{{ hasLocation }}"
+>
+  <view class="fab-inner">
+    <text class="fab-icon">+</text>
+  </view>
+</view>
+
+<!-- ==================== 登录引导弹窗 ==================== -->
+<view class="login-modal" wx:if="{{ showLoginModal }}" bindtap="onCloseLoginModal">
+  <view class="login-dialog" catchtap="">
+    <view class="login-illustration">🏃</view>
+    <view class="login-title">发现身边的运动局</view>
+    <view class="login-desc">登录后即可发布和加入附近的运动组局</view>
+    <button class="btn btn-primary login-btn" bindtap="onLogin">
+      微信快捷登录
+    </button>
+    <view class="login-tip">登录即表示同意
+      <text class="login-link" bindtap="onViewAgreement" data-type="terms">《用户协议》</text>
+      和
+      <text class="login-link" bindtap="onViewAgreement" data-type="privacy">《隐私政策》</text>
+    </view>
+  </view>
+</view>

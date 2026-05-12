@@ -1,0 +1,4 @@
+<!-- pages/agreement/agreement.wxml -->
+<view class="container">
+  <view class="content">{{content}}</view>
+</view>

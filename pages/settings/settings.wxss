@@ -1,0 +1,21 @@
+.container { background: var(--bg-page); min-height: 100vh; padding-top: 20rpx; }
+.menu-list {
+  background: var(--bg-card);
+  margin: 0 24rpx 28rpx;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  border: 1rpx solid rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-card);
+}
+.menu-item {
+  display: flex; align-items: center;
+  padding: 30rpx 28rpx;
+  position: relative;
+  transition: background var(--duration-fast) var(--ease-smooth);
+}
+.menu-item:active { background: var(--bg-hover); }
+.menu-item:not(:last-child)::after { content: ''; position: absolute; bottom: 0; left: 28rpx; right: 28rpx; height: 1rpx; background: var(--border-light); }
+.menu-text { font-size: 28rpx; color: var(--text-primary); flex: 1; font-weight: 500; }
+.menu-value { font-size: 26rpx; color: var(--text-hint); margin-right: 12rpx; }
+.menu-arrow { font-size: 36rpx; color: var(--text-muted); font-weight: 300; }
+.danger-text { color: #ef4444 !important; font-weight: 600; }

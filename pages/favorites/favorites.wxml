@@ -1,0 +1,61 @@
+<!-- pages/favorites/favorites.wxml -->
+<wxs src="../../utils/format.wxs" module="fmt" />
+<view class="container">
+  <!-- 加载中 -->
+  <block wx:if="{{isLoading}}">
+    <view class="card skeleton-card" wx:for="{{[1,2,3]}}" wx:key="index">
+      <view class="skeleton skeleton-title"></view>
+      <view class="skeleton skeleton-line"></view>
+    </view>
+  </block>
+
+  <!-- 错误 -->
+  <view wx:elif="{{loadError}}" class="empty">
+    <text class="empty-icon">⚠️</text>
+    <text class="empty-text">{{loadError}}</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:elif="{{teamList.length === 0}}" class="empty">
+    <text class="empty-icon">⭐</text>
+    <text class="empty-text" style="font-size:32rpx;font-weight:500;color:var(--text-primary);margin-bottom:12rpx;">还没有收藏过组局</text>
+    <text class="empty-text">在首页看到感兴趣的组局，点击收藏</text>
+    <view class="empty-action mt-32" bindtap="goToHome">
+      <text class="empty-action-text">去首页看看</text>
+    </view>
+  </view>
+
+  <!-- 列表 -->
+  <block wx:else>
+    <view class="team-card card" wx:for="{{teamList}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
+      <view class="team-card-header">
+        <view class="sport-badge sport-badge-{{item.sportType}}">
+          {{fmt.sportEmoji(item.sportType)}} {{fmt.sportName(item.sportType)}}
+        </view>
+        <view class="status-tag status-{{item.status}}">{{fmt.teamStatus(item.status)}}</view>
+      </view>
+      <view class="team-card-body">
+        <view class="info-row">
+          <text class="info-text flex-1">{{item.title}}</text>
+        </view>
+        <view class="info-row">
+          <text class="info-icon">📍</text>
+          <text class="info-text flex-1">{{item.venueName}}</text>
+          <text class="info-time">{{fmt.timeRange(item.startTime, item.endTime)}}</text>
+        </view>
+      </view>
+      <view class="team-card-footer" wx:if="{{item.leaderId}}">
+        <view class="leader-info">
+          <image class="leader-avatar" src="{{item.leaderId.avatarUrl || '/assets/default-avatar.png'}}" mode="aspectFill" lazy-load />
+          <text class="leader-name">{{item.leaderId.nickname}}</text>
+        </view>
+        <text class="member-count">{{item.currentMembers}}/{{item.maxMembers}}人</text>
+      </view>
+    </view>
+    <view class="load-more" wx:if="{{teamList.length > 0}}">
+      <text wx:if="{{hasMore && !isLoadingMore}}">上滑加载更多</text>
+      <text wx:elif="{{isLoadingMore}}">加载中...</text>
+      <text wx:elif="{{!hasMore}}" class="text-hint">— 已全部加载 —</text>
+    </view>
+  </block>
+</view>

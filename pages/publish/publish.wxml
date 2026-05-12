@@ -1,0 +1,112 @@
+<!-- pages/publish/publish.wxml -->
+<view class="container">
+  <view class="form">
+    <!-- 封面图 -->
+    <view class="form-item">
+      <text class="label">封面图（可选）</text>
+      <view class="cover-picker" bindtap="onChooseCover">
+        <image wx:if="{{coverImagePreview}}" class="cover-preview" src="{{coverImagePreview}}" mode="aspectFill" />
+        <view wx:else class="cover-placeholder">
+          <text class="cover-add-icon">📷</text>
+          <text class="cover-add-text">添加封面图</text>
+        </view>
+        <view wx:if="{{coverImagePreview}}" class="cover-remove" catchtap="onRemoveCover">
+          <text class="cover-remove-icon">✕</text>
+        </view>
+      </view>
+      <text wx:if="{{isUploadingCover}}" class="upload-hint">上传中...</text>
+    </view>
+
+    <!-- 运动类型 -->
+    <view class="form-item">
+      <text class="label">运动类型</text>
+      <picker bindchange="onSportTypeChange" value="{{sportTypeIndex}}" range="{{sportTypes}}">
+        <view class="picker">
+          <text class="picker-text">{{sportTypes[sportTypeIndex]}}</text>
+          <text class="picker-arrow">›</text>
+        </view>
+      </picker>
+    </view>
+
+    <!-- 标题 -->
+    <view class="form-item">
+      <text class="label">标题</text>
+      <view class="input-wrap">
+        <input class="form-input" placeholder="给组局起个名字" placeholder-class="placeholder" value="{{title}}" bindinput="onTitleInput" />
+      </view>
+    </view>
+
+    <!-- 描述 -->
+    <view class="form-item">
+      <text class="label">活动描述</text>
+      <view class="input-wrap textarea-wrap">
+        <textarea class="form-textarea" placeholder="描述活动详情，吸引更多人参加" placeholder-class="placeholder" value="{{description}}" bindinput="onDescInput" />
+      </view>
+    </view>
+
+    <!-- 标签 -->
+    <view class="form-item">
+      <text class="label">组局标签 <text class="label-hint">（可多选，最多5个）</text></text>
+      <view class="tags-grid">
+        <view
+          wx:for="{{tagOptions}}"
+          wx:key="value"
+          class="tag-option {{ item.selected ? 'active' : '' }}"
+          bindtap="onToggleTag"
+          data-tag="{{item.value}}"
+        >
+          <text class="tag-option-text">{{ item.value }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 地点 -->
+    <view class="form-item">
+      <text class="label">活动地点</text>
+      <view class="picker location-pick" bindtap="onChooseLocation">
+        <text class="picker-text {{locationName ? 'has-value' : 'placeholder'}}">{{locationName || '点击选择地点'}}</text>
+        <text class="picker-arrow">›</text>
+      </view>
+    </view>
+
+    <!-- 时间 -->
+    <view class="form-item">
+      <text class="label">活动时间</text>
+      <picker mode="multiSelector" bindchange="onTimeChange" bindcolumnchange="onTimeColumnChange" value="{{timeIndex}}" range="{{timeArray}}">
+        <view class="picker">
+          <text class="picker-text {{activityTime ? 'has-value' : 'placeholder'}}">{{activityTime || '选择日期和时间'}}</text>
+          <text class="picker-arrow">›</text>
+        </view>
+      </picker>
+    </view>
+
+    <!-- 人数 -->
+    <view class="form-item">
+      <text class="label">人数上限</text>
+      <view class="input-wrap">
+        <input class="form-input" type="number" placeholder="2 ~ 100 人" placeholder-class="placeholder" value="{{maxMembers}}" bindinput="onMaxMembersInput" />
+      </view>
+    </view>
+
+    <!-- 费用 -->
+    <view class="form-item">
+      <text class="label">费用说明</text>
+      <view class="input-wrap">
+        <input class="form-input" placeholder="如：AA制 / 免费" placeholder-class="placeholder" value="{{fee}}" bindinput="onFeeInput" />
+      </view>
+    </view>
+
+    <!-- 联系方式 -->
+    <view class="form-item">
+      <text class="label">联系方式</text>
+      <view class="input-wrap">
+        <input class="form-input" placeholder="微信号或手机号" placeholder-class="placeholder" value="{{contact}}" bindinput="onContactInput" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 提交按钮 -->
+  <button class="submit-btn" bindtap="onSubmit" loading="{{submitting}}">
+    <text wx:if="{{!submitting}}">发布组局</text>
+  </button>
+</view>

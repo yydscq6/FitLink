@@ -1,0 +1,265 @@
+<!--pages/teamDetail/teamDetail.wxml-->
+<wxs src="../../utils/format.wxs" module="fmt" />
+
+<!-- 加载中 -->
+<view wx:if="{{ isLoading }}" class="loading-container">
+  <view class="skeleton skeleton-title"></view>
+  <view class="skeleton skeleton-line"></view>
+  <view class="skeleton skeleton-line short"></view>
+  <view class="skeleton skeleton-block"></view>
+</view>
+
+<!-- 加载失败 -->
+<view wx:elif="{{ loadError }}" class="error-container">
+  <text class="error-icon">😵</text>
+  <text class="error-text">{{ loadError }}</text>
+  <view class="empty-action mt-24" bindtap="onRetry">
+    <text class="empty-action-text">重新加载</text>
+  </view>
+  <view class="back-link mt-24" bindtap="onGoHome">
+    <text class="back-link-text">返回首页</text>
+  </view>
+</view>
+
+<!-- 详情内容 -->
+<view wx:elif="{{ team }}" class="detail-page">
+
+  <!-- 封面图 -->
+  <image wx:if="{{ team.coverImage }}" class="detail-cover" src="{{ team.coverImage }}" mode="aspectFill" />
+
+  <!-- 顶部信息卡 -->
+  <view class="hero-card">
+    <view class="hero-top">
+      <view class="sport-badge sport-badge-{{ team.sportType }}">
+        <text class="badge-emoji">{{ fmt.sportEmoji(team.sportType) }}</text>
+        <text class="badge-text">{{ fmt.sportName(team.sportType) }}</text>
+      </view>
+      <view class="status-pill status-{{ team.status }}">{{ fmt.teamStatus(team.status) }}</view>
+    </view>
+    <view class="hero-title">{{ team.title }}</view>
+    <view wx:if="{{ team.description }}" class="hero-desc">{{ team.description }}</view>
+    <!-- 标签 -->
+    <view class="detail-tags" wx:if="{{ team.tags && team.tags.length > 0 }}">
+      <text class="detail-tag" wx:for="{{ team.tags }}" wx:key="*this">{{ item }}</text>
+    </view>
+  </view>
+
+  <!-- 信息列表 -->
+  <view class="info-card">
+    <view class="info-row" bindtap="onOpenMap">
+      <view class="info-icon-wrap"><text class="info-icon-text">📍</text></view>
+      <view class="info-content flex-1">
+        <text class="info-label">活动地点</text>
+        <text class="info-value link">{{ team.location.name || team.venueName || '查看地图' }}</text>
+      </view>
+      <text class="info-arrow">›</text>
+    </view>
+    <view class="info-row">
+      <view class="info-icon-wrap"><text class="info-icon-text">🕐</text></view>
+      <view class="info-content flex-1">
+        <text class="info-label">活动时间</text>
+        <text class="info-value">{{ fmt.formatDateTime(team.startTime) }} ~ {{ fmt.formatDateTime(team.endTime) }}</text>
+      </view>
+    </view>
+    <view class="info-row">
+      <view class="info-icon-wrap"><text class="info-icon-text">👥</text></view>
+      <view class="info-content flex-1">
+        <text class="info-label">参加人数</text>
+        <text class="info-value">{{ team.currentMembers || 0 }} / {{ team.maxMembers }} 人</text>
+      </view>
+    </view>
+    <view class="info-row" wx:if="{{ team.fee }}">
+      <view class="info-icon-wrap"><text class="info-icon-text">💰</text></view>
+      <view class="info-content flex-1">
+        <text class="info-label">费用说明</text>
+        <text class="info-value">{{ team.fee }}</text>
+      </view>
+    </view>
+    <view class="info-row last" wx:if="{{ team.contact }}" bindtap="onCall">
+      <view class="info-icon-wrap"><text class="info-icon-text">📱</text></view>
+      <view class="info-content flex-1">
+        <text class="info-label">联系方式</text>
+        <text class="info-value link">{{ team.contact }}</text>
+      </view>
+      <text class="info-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 队长信息 -->
+  <view class="section-card" wx:if="{{ team.leaderId }}">
+    <view class="section-label">发起人</view>
+    <view class="leader-row" data-userid="{{ team.leaderId._id }}" bindtap="onGoToUser">
+      <image class="leader-avatar-lg" src="{{ team.leaderId.avatarUrl || '/assets/default-avatar.png' }}" mode="aspectFill" lazy-load />
+      <view class="leader-detail flex-1">
+        <text class="leader-name-lg">{{ team.leaderId.nickname }}</text>
+        <view class="credit-inline">
+          <text class="credit-val credit-{{ fmt.creditLevel(team.leaderId.creditScore) }}">{{ team.leaderId.creditScore }}</text>
+          <text class="credit-txt">信用分</text>
+        </view>
+      </view>
+      <view class="leader-badge">队长</view>
+    </view>
+  </view>
+
+  <!-- 队员列表 -->
+  <view class="section-card" wx:if="{{ team.members && team.members.length > 0 }}">
+    <view class="section-label">队员 ({{ team.members.length }})</view>
+    <view class="member-list">
+      <view class="member-item" wx:for="{{ team.members }}" wx:key="_id" data-userid="{{ item.userId._id }}" bindtap="onGoToUser">
+        <image class="member-avatar" src="{{ item.userId.avatarUrl || '/assets/default-avatar.png' }}" mode="aspectFill" lazy-load />
+        <text class="member-name flex-1">{{ item.userId.nickname || '未知' }}</text>
+        <text class="member-time">{{ fmt.relativeTime(item.joinedAt) }}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 评论区 -->
+  <view class="section-card">
+    <view class="section-label">留言 ({{ comments.length }})</view>
+
+    <view class="comment-list" wx:if="{{ comments.length > 0 }}">
+      <view class="comment-item" wx:for="{{ comments }}" wx:key="_id">
+        <image class="comment-avatar" src="{{ item.userId.avatarUrl || '/assets/default-avatar.png' }}" mode="aspectFill" lazy-load data-userid="{{ item.userId._id }}" bindtap="onGoToUser" />
+        <view class="comment-body flex-1">
+          <view class="comment-meta">
+            <text class="comment-name" data-userid="{{ item.userId._id }}" bindtap="onGoToUser">{{ item.userId.nickname }}</text>
+            <text class="comment-time">{{ fmt.relativeTime(item.createdAt) }}</text>
+          </view>
+          <text class="comment-content">{{ item.content }}</text>
+          <!-- 评论操作栏 -->
+          <view class="comment-actions">
+            <view class="comment-action" bindtap="onLikeComment" data-id="{{ item._id }}" data-liked="{{ item.isLiked }}">
+              <text class="action-icon">{{ item.isLiked ? '❤️' : '🤍' }}</text>
+              <text class="action-count" wx:if="{{ item.likeCount > 0 }}">{{ item.likeCount }}</text>
+            </view>
+            <view class="comment-action" bindtap="onReplyComment" data-id="{{ item._id }}" data-name="{{ item.userId.nickname }}">
+              <text class="action-icon">💬</text>
+              <text class="action-text">回复</text>
+            </view>
+          </view>
+          <!-- 回复列表 -->
+          <view class="reply-list" wx:if="{{ item.replies && item.replies.length > 0 }}">
+            <view class="reply-item" wx:for="{{ item.replies }}" wx:for-item="reply" wx:key="_id">
+              <text class="reply-name" data-userid="{{ reply.userId._id }}" bindtap="onGoToUser">{{ reply.userId.nickname }}</text>
+              <text class="reply-colon">：</text>
+              <text class="reply-content">{{ reply.content }}</text>
+              <view class="reply-actions">
+                <view class="comment-action" bindtap="onLikeComment" data-id="{{ reply._id }}" data-liked="{{ reply.isLiked }}">
+                  <text class="action-icon-sm">{{ reply.isLiked ? '❤️' : '🤍' }}</text>
+                  <text class="action-count" wx:if="{{ reply.likeCount > 0 }}">{{ reply.likeCount }}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:elif="{{ !isLoadingComments }}" class="comment-empty">
+      <text class="comment-empty-icon">💬</text>
+      <text class="comment-empty-text">暂无留言，来说点什么吧~</text>
+    </view>
+
+    <!-- 发表评论/回复 -->
+    <view class="comment-input-bar" wx:if="{{ team.isJoined || team.isLeader }}">
+      <view wx:if="{{ replyTo }}" class="reply-hint">
+        <text class="reply-hint-text">回复 {{ replyToName }}：</text>
+        <text class="reply-cancel" bindtap="onCancelReply">✕</text>
+      </view>
+      <view class="comment-input-row">
+        <input class="comment-input" placeholder="{{ replyTo ? '回复 ' + replyToName + '...' : '发表留言...' }}" value="{{ commentText }}" bindinput="onCommentInput" bindconfirm="onSendComment" confirm-type="send" />
+        <view class="comment-send" bindtap="onSendComment">
+          <text class="comment-send-text">发送</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 举报入口 -->
+  <view class="report-bar" bindtap="onReport">
+    <text class="report-text">⚠️ 举报此组局</text>
+  </view>
+
+  <!-- 底部安全间距（适配两行操作栏） -->
+  <view style="height: 280rpx;"></view>
+
+  <!-- 底部操作栏 -->
+  <view class="action-bar">
+    <!-- 工具行：收藏 / 海报 / 邀请 -->
+    <view class="action-tools">
+      <view class="tool-btn" bindtap="onToggleFavorite">
+        <text class="tool-icon">{{ isFavorited ? '❤️' : '🤍' }}</text>
+        <text class="tool-label">{{ isFavorited ? '已收藏' : '收藏' }}</text>
+      </view>
+      <view class="tool-btn" bindtap="onGeneratePoster">
+        <text class="tool-icon">🖼️</text>
+        <text class="tool-label">海报</text>
+      </view>
+      <button class="tool-btn share-btn" open-type="share">
+        <text class="tool-icon">📤</text>
+        <text class="tool-label">邀请</text>
+      </button>
+    </view>
+    <!-- 主操作行 -->
+    <view class="action-main">
+      <!-- 普通用户：加入 -->
+      <view wx:if="{{ team.status === 'recruiting' && !team.isJoined && !team.isLeader }}" class="action-btn primary" bindtap="onJoin">
+        <text class="action-btn-text primary-text">加入组局</text>
+      </view>
+      <!-- 普通用户：退出 -->
+      <view wx:if="{{ team.isJoined && !team.isLeader }}" class="action-btn outline" bindtap="onQuit">
+        <text class="action-btn-text outline-text">退出组局</text>
+      </view>
+      <!-- 队长管理：招募中 -->
+      <view wx:if="{{ team.isLeader && team.status === 'recruiting' }}" class="action-btn outline" bindtap="onEditTeam">
+        <text class="action-btn-text outline-text">编辑</text>
+      </view>
+      <view wx:if="{{ team.isLeader && team.status === 'recruiting' }}" class="action-btn danger-outline" bindtap="onCancelTeam">
+        <text class="action-btn-text danger-text">取消组局</text>
+      </view>
+      <view wx:if="{{ team.isLeader && team.status === 'recruiting' }}" class="action-btn primary" bindtap="onEndTeam">
+        <text class="action-btn-text primary-text">结束招募</text>
+      </view>
+      <!-- 队长管理：已结束/已取消 -->
+      <view wx:if="{{ team.isLeader && (team.status === 'ended' || team.status === 'cancelled') }}" class="action-btn outline disabled">
+        <text class="action-btn-text outline-text">{{ fmt.teamStatus(team.status) }}</text>
+      </view>
+      <!-- 非招募状态（非队长） -->
+      <view wx:if="{{ !team.isLeader && team.status !== 'recruiting' }}" class="action-btn outline disabled">
+        <text class="action-btn-text outline-text">{{ fmt.teamStatus(team.status) }}</text>
+      </view>
+    </view>
+  </view>
+
+</view>
+
+<!-- 分享海报弹窗 -->
+<view class="poster-modal" wx:if="{{ showPoster }}" bindtap="onClosePoster">
+  <view class="poster-dialog" catchtap="">
+    <view class="poster-title">长按保存，分享给好友</view>
+    <canvas
+      type="2d"
+      id="posterCanvas"
+      class="poster-canvas"
+      style="width: 600rpx; height: 900rpx;"
+    />
+    <image
+      wx:if="{{ posterImage }}"
+      class="poster-preview"
+      src="{{ posterImage }}"
+      mode="widthFix"
+      show-menu-by-longpress
+    />
+    <view wx:if="{{ isGeneratingPoster }}" class="poster-loading">
+      <text class="poster-loading-text">海报生成中...</text>
+    </view>
+    <view class="poster-actions">
+      <view class="poster-save-btn" bindtap="onSavePoster">
+        <text class="poster-save-text">保存到相册</text>
+      </view>
+    </view>
+    <view class="poster-close" bindtap="onClosePoster">
+      <text class="poster-close-text">✕</text>
+    </view>
+  </view>
+</view>

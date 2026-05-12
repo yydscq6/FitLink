@@ -1,0 +1,45 @@
+.container { padding: 0 0 32rpx; background: var(--bg-page); min-height: 100vh; }
+.team-card {
+  padding: 0; margin: 16rpx 24rpx;
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  border: 1rpx solid rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: transform var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out);
+  animation: fadeInUp 0.4s var(--ease-out) both;
+}
+.team-card:active { transform: scale(0.98); box-shadow: var(--shadow-soft); }
+.team-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12rpx; }
+.team-card-body { padding: 24rpx 28rpx 0; }
+.team-card-footer { display: flex; align-items: center; justify-content: space-between; padding: 16rpx 28rpx 24rpx; }
+.sport-badge { display: inline-flex; align-items: center; gap: 6rpx; padding: 6rpx 18rpx; border-radius: var(--radius-pill); font-size: 22rpx; font-weight: 600; }
+.sport-badge-basketball { background: rgba(255, 152, 0, 0.1); color: #e65100; }
+.sport-badge-badminton  { background: rgba(76, 175, 80, 0.1); color: #2e7d32; }
+.sport-badge-running    { background: rgba(33, 150, 243, 0.1); color: #1565c0; }
+.sport-badge-football   { background: rgba(244, 67, 54, 0.08); color: #bf360c; }
+.sport-badge-tennis     { background: rgba(156, 39, 176, 0.08); color: #6a1b9a; }
+.sport-badge-swimming   { background: rgba(3, 169, 244, 0.08); color: #0277bd; }
+.sport-badge-volleyball { background: rgba(255, 193, 7, 0.1); color: #f57f17; }
+.sport-badge-pingpong   { background: rgba(255, 152, 0, 0.1); color: #e65100; }
+.sport-badge-hiking     { background: rgba(121, 85, 72, 0.08); color: #5d4037; }
+.sport-badge-cycling    { background: rgba(0, 150, 136, 0.08); color: #00695c; }
+.sport-badge-fitness    { background: rgba(233, 30, 99, 0.08); color: #ad1457; }
+.sport-badge-other      { background: rgba(158, 158, 158, 0.1); color: #616161; }
+.status-tag { padding: 6rpx 16rpx; border-radius: var(--radius-pill); font-size: 20rpx; font-weight: 600; color: #fff; letter-spacing: 1rpx; }
+.status-recruiting { background: linear-gradient(135deg, #22c55e, #16a34a); }
+.status-ongoing    { background: linear-gradient(135deg, #3498db, #2980b9); }
+.status-ended      { background: linear-gradient(135deg, #95a5a6, #7f8c8d); }
+.status-cancelled  { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.info-row { display: flex; align-items: flex-start; gap: 8rpx; margin-bottom: 8rpx; }
+.info-icon { font-size: 24rpx; flex-shrink: 0; }
+.info-text { font-size: 28rpx; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.info-time { font-size: 24rpx; color: var(--text-hint); flex-shrink: 0; margin-left: 16rpx; }
+.leader-info { display: flex; align-items: center; gap: 10rpx; }
+.leader-avatar { width: 44rpx; height: 44rpx; border-radius: 50%; background: var(--bg-input); flex-shrink: 0; }
+.leader-name { font-size: 24rpx; color: var(--text-secondary); font-weight: 500; }
+.member-count { font-size: 24rpx; color: var(--text-secondary); font-weight: 600; }
+.skeleton-card { margin: 16rpx 24rpx; padding: 28rpx; background: var(--bg-card); border-radius: var(--radius-card); border: 1rpx solid rgba(0, 0, 0, 0.03); }
+.skeleton-title { height: 40rpx; width: 55%; margin-bottom: 16rpx; }
+.skeleton-line { height: 28rpx; width: 75%; }
+.load-more { text-align: center; padding: 40rpx 0; font-size: 24rpx; color: var(--text-hint); letter-spacing: 2rpx; }

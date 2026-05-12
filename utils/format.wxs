@@ -1,0 +1,177 @@
+/**
+ * format.wxs
+ * WXS 格式化工具（运行在视图层，无异步，setData 性能优化）
+ * 在 WXML 中通过 <wxs src="..." module="fmt" /> 引用
+ *
+ * 注意：WXS 不支持正则表达式，所有字符串操作均使用 indexOf/substring
+ */
+
+/**
+ * 替换字符串中所有匹配项（WXS 不支持正则，手动实现）
+ */
+function replaceAll(str, oldStr, newStr) {
+  var result = '';
+  var idx = 0;
+  var pos = str.indexOf(oldStr, idx);
+  while (pos > -1) {
+    result += str.substring(idx, pos) + newStr;
+    idx = pos + oldStr.length;
+    pos = str.indexOf(oldStr, idx);
+  }
+  result += str.substring(idx);
+  return result;
+}
+
+function toDate(val) {
+  if (!val) return getDate();
+  if (typeof val === 'number') return getDate(val);
+  // 处理 "2026-05-10T14:00:00.000Z" 或 "2026-05-08 10:43:44" 格式
+  var s = '' + val;
+  // 去掉 T 和 Z
+  s = replaceAll(s, 'T', ' ');
+  s = replaceAll(s, 'Z', '');
+  // 去掉毫秒部分 ".000"
+  var dotIdx = s.indexOf('.');
+  if (dotIdx > -1) {
+    s = s.substring(0, dotIdx);
+  }
+  // "-" 替换为 "/"，使 WXS getDate() 可正确解析
+  s = replaceAll(s, '-', '/');
+  return getDate(s);
+}
+
+/**
+ * 运动类型 emoji
+ */
+function sportEmoji(sportType) {
+  var map = {
+    basketball: '🏀',
+    badminton: '🏸',
+    running:    '🏃',
+    football:   '⚽',
+    tennis:     '🎾',
+    swimming:   '🏊',
+    volleyball: '🏐',
+    pingpong:   '🏓',
+    hiking:     '🥾',
+    cycling:    '🚴',
+    fitness:    '🏋️',
+    other:      '🎯',
+  };
+  return map[sportType] || '🎯';
+}
+
+/**
+ * 运动类型中文名
+ */
+function sportName(sportType) {
+  var map = {
+    basketball: '篮球',
+    badminton: '羽毛球',
+    running:    '跑步',
+    football:   '足球',
+    tennis:     '网球',
+    swimming:   '游泳',
+    volleyball: '排球',
+    pingpong:   '乒乓球',
+    hiking:     '爬山',
+    cycling:    '骑行',
+    fitness:    '健身',
+    other:      '其他',
+  };
+  return map[sportType] || '其他';
+}
+
+/**
+ * 格式化时间范围
+ * startTime: ISO 字符串或时间戳
+ * endTime: ISO 字符串或时间戳
+ */
+function timeRange(startTime, endTime) {
+  if (!startTime) return '';
+  var s = formatTime(startTime);
+  if (!endTime) return s + ' 开始';
+  return s + '-' + formatTime(endTime);
+}
+
+/**
+ * 格式化时间（HH:MM）
+ */
+function formatTime(ts) {
+  if (!ts) return '';
+  var d = toDate(ts);
+  var h = d.getHours();
+  var m = d.getMinutes();
+  return (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m);
+}
+
+/**
+ * 格式化日期（MM-DD HH:MM）
+ */
+function formatDateTime(ts) {
+  if (!ts) return '';
+  var d = toDate(ts);
+  var mo = d.getMonth() + 1;
+  var day = d.getDate();
+  return (mo < 10 ? '0' + mo : mo) + '-' + (day < 10 ? '0' + day : day) + ' ' + formatTime(ts);
+}
+
+/**
+ * 相对时间（刚刚/几分钟前/几小时前）
+ */
+function relativeTime(ts) {
+  if (!ts) return '';
+  var diff = (getDate() - toDate(ts)) / 1000;
+  if (diff < 60) return '刚刚';
+  if (diff < 3600) return Math.floor(diff / 60) + '分钟前';
+  if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
+  if (diff < 604800) return Math.floor(diff / 86400) + '天前';
+  return formatDateTime(ts);
+}
+
+/**
+ * 队伍状态文本
+ */
+function teamStatus(status) {
+  var map = {
+    recruiting: '招募中',
+    ongoing: '进行中',
+    ended: '已结束',
+    cancelled: '已取消',
+  };
+  return map[status] || status;
+}
+
+/**
+ * 信誉等级
+ */
+function creditLevel(score) {
+  if (score >= 150) return 'excellent';
+  if (score >= 120) return 'good';
+  if (score >= 80)  return 'normal';
+  if (score >= 50)  return 'warning';
+  return 'poor';
+}
+
+/**
+ * 判断数组是否包含某值（WXML 中 Array.indexOf 不可靠，用此函数替代）
+ */
+function includes(arr, val) {
+  if (!arr) return false;
+  for (var i = 0; i < arr.length; i++) {
+    if (arr[i] === val) return true;
+  }
+  return false;
+}
+
+module.exports = {
+  sportEmoji: sportEmoji,
+  sportName: sportName,
+  timeRange: timeRange,
+  formatTime: formatTime,
+  formatDateTime: formatDateTime,
+  relativeTime: relativeTime,
+  teamStatus: teamStatus,
+  creditLevel: creditLevel,
+  includes: includes,
+};
