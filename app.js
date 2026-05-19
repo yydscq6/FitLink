@@ -357,9 +357,6 @@ const appInstance = {
       wx.cloud.uploadFile({
         cloudPath,
         filePath: data.filePath,
-        config: {
-          env: { type: 'public' }
-        },
         success: (res) => {
           resolve({ code: 0, data: { fileID: res.fileID } });
         },

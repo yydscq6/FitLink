@@ -168,7 +168,6 @@ Page({
     wx.cloud.uploadFile({
       cloudPath,
       filePath: tempFilePath,
-      config: { env: { type: 'public' } },
       success: (uploadRes) => {
         if (!uploadRes.fileID) {
           wx.hideLoading();

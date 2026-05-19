@@ -217,9 +217,6 @@ Page({
     wx.cloud.uploadFile({
       cloudPath: cloudPath,
       filePath: filePath,
-      config: {
-        env: { type: 'public' }
-      },
       success: function(res) {
         if (self._destroyed) return;
         if (res.fileID) {
