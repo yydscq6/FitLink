@@ -242,6 +242,9 @@ Page({
     var uploadTask = wx.cloud.uploadFile({
       cloudPath: cloudPath,
       filePath: filePath,
+      config: {
+        env: { type: 'public' }
+      },
       success: function(res) {
         if (self._destroyed) { finish(); return; }
         if (res.fileID) {
@@ -335,7 +338,7 @@ Page({
         longitude: location.longitude,
         latitude: location.latitude,
       },
-      activityTime: new Date(activityTime).toISOString(),
+      activityTime: activityTime,
       maxMembers: parseInt(maxMembers),
       fee: fee || '免费',
       contact: (contact || '').trim(),

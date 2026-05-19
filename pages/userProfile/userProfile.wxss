@@ -48,82 +48,157 @@
 /* 数据统计 */
 .stats-bar {
   display: flex; align-items: center; justify-content: center;
-  background: var(--bg-card);
+  background: var(--bg-card, #fff);
   padding: 32rpx 0;
   margin: -1rpx 24rpx 28rpx;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.06);
   position: relative; z-index: 1;
 }
 .stat-item { text-align: center; flex: 1; }
-.stat-num { display: block; font-size: 44rpx; font-weight: 900; color: var(--text-primary); }
-.stat-label { display: block; font-size: 22rpx; color: var(--text-hint); margin-top: 4rpx; letter-spacing: 1rpx; }
-.stat-divider { width: 1rpx; height: 48rpx; background: var(--border-light); }
+.stat-num { display: block; font-size: 44rpx; font-weight: 900; color: #1a1a1a; }
+.stat-label { display: block; font-size: 22rpx; color: #94a3b8; margin-top: 4rpx; letter-spacing: 1rpx; }
+.stat-divider { width: 1rpx; height: 48rpx; background: #e8eaed; }
+
+/* Section 卡片容器 */
+.section-card {
+  margin: 0 24rpx 24rpx;
+  background: var(--bg-card, #fff);
+  border-radius: 20rpx;
+  padding: 28rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.06);
+}
+.section-label {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 20rpx;
+  padding-left: 4rpx;
+}
 
 /* 运动偏好 */
 .prefs-row { display: flex; flex-wrap: wrap; gap: 12rpx; }
 .pref-tag {
-  font-size: 24rpx; color: var(--primary-color);
+  font-size: 24rpx; color: #059669;
   background: rgba(5, 150, 105, 0.06);
-  padding: 8rpx 22rpx; border-radius: 20rpx;
+  padding: 10rpx 24rpx; border-radius: 24rpx;
   font-weight: 600;
-  border: 1rpx solid rgba(5, 150, 105, 0.1);
+  border: 1rpx solid rgba(5, 150, 105, 0.12);
 }
 
 /* Tab 栏 */
 .tab-bar {
   display: flex; margin: 0 24rpx 24rpx;
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
+  background: var(--bg-card, #fff);
+  border-radius: 20rpx;
   overflow: hidden;
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.06);
 }
 .tab-item {
   flex: 1; text-align: center;
   padding: 26rpx 0;
   position: relative;
-  transition: all var(--duration-normal) var(--ease-out);
+  transition: all 0.25s ease-out;
 }
 .tab-item.active {
-  color: var(--primary-color);
+  color: #059669;
 }
 .tab-item.active::after {
   content: "";
   position: absolute; bottom: 0; left: 30%; right: 30%;
   height: 4rpx; border-radius: 2rpx;
-  background: var(--primary-color);
+  background: #059669;
 }
 .tab-text { font-size: 26rpx; font-weight: 600; color: inherit; letter-spacing: 0.5rpx; }
-.tab-item:not(.active) .tab-text { color: var(--text-secondary); }
+.tab-item:not(.active) .tab-text { color: #94a3b8; }
 
 /* 组局卡片 */
 .team-list { padding: 0 24rpx; }
 .team-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  padding: 28rpx; margin-bottom: 20rpx;
-  border: 1rpx solid rgba(0, 0, 0, 0.03);
-  box-shadow: var(--shadow-card);
-  transition: transform var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out);
-  animation: fadeInUp 0.4s var(--ease-out) both;
+  background: var(--bg-card, #fff);
+  border-radius: 20rpx;
+  padding: 0;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.06);
+  overflow: hidden;
+  transition: transform 0.2s ease-out;
+  animation: fadeInUp 0.4s ease-out both;
 }
-.team-card:active { transform: scale(0.98); box-shadow: var(--shadow-soft); }
+.team-card:active { transform: scale(0.98); }
+
+/* 卡片左侧色条 */
+.team-card-accent {
+  width: 6rpx;
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  border-radius: 20rpx 0 0 20rpx;
+}
+.team-card { position: relative; }
+.sport-accent-basketball { background: #f97316; }
+.sport-accent-football { background: #22c55e; }
+.sport-accent-badminton { background: #3b82f6; }
+.sport-accent-running { background: #ef4444; }
+.sport-accent-tennis { background: #eab308; }
+.sport-accent-swimming { background: #06b6d4; }
+.sport-accent-volleyball { background: #f59e0b; }
+.sport-accent-pingpong { background: #8b5cf6; }
+.sport-accent-hiking { background: #10b981; }
+.sport-accent-cycling { background: #6366f1; }
+.sport-accent-fitness { background: #ec4899; }
+.sport-accent-other { background: #94a3b8; }
+
+.team-card-inner { padding: 28rpx 28rpx 28rpx 34rpx; }
 .team-card-top { display: flex; align-items: center; gap: 12rpx; margin-bottom: 12rpx; }
-.team-sport-badge { font-size: 38rpx; }
-.team-card-title { font-size: 30rpx; font-weight: 600; color: var(--text-primary); }
+.team-sport-badge {
+  display: inline-flex; align-items: center; gap: 6rpx;
+  font-size: 22rpx; font-weight: 700;
+  padding: 4rpx 14rpx; border-radius: 12rpx;
+  background: rgba(5, 150, 105, 0.08);
+  color: #059669;
+}
+.team-card-title {
+  font-size: 30rpx; font-weight: 700; color: #1a1a1a;
+  margin-bottom: 10rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .team-status-tag {
   font-size: 20rpx; padding: 4rpx 14rpx; border-radius: 12rpx;
-  font-weight: 600;
+  font-weight: 600; margin-left: auto;
 }
 .status-recruiting { color: #059669; background: rgba(5, 150, 105, 0.08); }
 .status-ongoing { color: #d97706; background: rgba(217, 119, 6, 0.08); }
 .status-ended { color: #94a3b8; background: rgba(148, 163, 184, 0.12); }
 .status-cancelled { color: #ef4444; background: rgba(239, 68, 68, 0.08); }
-.team-card-info { display: flex; gap: 20rpx; margin-bottom: 8rpx; }
-.team-card-venue, .team-card-time { font-size: 24rpx; color: var(--text-hint); }
-.team-card-meta { margin-top: 4rpx; }
-.team-card-members { font-size: 22rpx; color: var(--text-hint); }
+
+.team-card-info {
+  display: flex; align-items: center; gap: 16rpx;
+  margin-bottom: 8rpx; flex-wrap: wrap;
+}
+.team-card-venue, .team-card-time {
+  font-size: 24rpx; color: #64748b;
+  display: flex; align-items: center; gap: 4rpx;
+}
+.team-card-venue::before { content: '📍'; font-size: 22rpx; }
+.team-card-time::before { content: '🕐'; font-size: 22rpx; }
+
+.team-card-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 12rpx; padding-top: 12rpx;
+  border-top: 1rpx solid #f1f5f9;
+}
+.team-card-members {
+  font-size: 22rpx; color: #94a3b8; font-weight: 500;
+}
 
 /* 空状态 */
 .empty-section { padding: 100rpx 0; text-align: center; }
-.empty-section-text { font-size: 26rpx; color: var(--text-hint); letter-spacing: 1rpx; }
+.empty-section-icon { font-size: 60rpx; display: block; margin-bottom: 16rpx; }
+.empty-section-text { font-size: 26rpx; color: #94a3b8; letter-spacing: 1rpx; display: block; }
+
+/* 动画 */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -152,6 +152,11 @@ const appInstance = {
   checkLogin() {
     const userInfo = wx.getStorageSync('userInfo');
     if (userInfo) {
+      // 修复旧版无效头像路径（http://tmp/ 是已过期的临时文件路径）
+      if (userInfo.avatarUrl && userInfo.avatarUrl.indexOf('http://tmp/') > -1) {
+        userInfo.avatarUrl = '';
+        wx.setStorageSync('userInfo', userInfo);
+      }
       this.globalData.userInfo = userInfo;
       this.globalData.isLogin = true;
 
@@ -352,6 +357,9 @@ const appInstance = {
       wx.cloud.uploadFile({
         cloudPath,
         filePath: data.filePath,
+        config: {
+          env: { type: 'public' }
+        },
         success: (res) => {
           resolve({ code: 0, data: { fileID: res.fileID } });
         },

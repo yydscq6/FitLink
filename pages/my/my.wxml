@@ -7,14 +7,14 @@
       <!-- 头像 -->
       <button wx:if="{{isLogin}}" class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
         <view class="avatar-ring">
-          <image class="avatar" src="{{userInfo.avatarUrl || '/assets/default-avatar.png'}}" mode="aspectFill" />
+          <image class="avatar" src="{{userInfo.avatarUrl || '/assets/default-avatar.png'}}" mode="aspectFill" binderror="onAvatarError" />
           <view class="avatar-edit-hint">
             <text class="avatar-edit-icon">📷</text>
           </view>
         </view>
       </button>
       <view wx:else class="avatar-ring">
-        <image class="avatar" src="{{userInfo.avatarUrl || '/assets/default-avatar.png'}}" mode="aspectFill" />
+        <image class="avatar" src="{{userInfo.avatarUrl || '/assets/default-avatar.png'}}" mode="aspectFill" binderror="onAvatarError" />
       </view>
 
       <!-- 昵称 -->

@@ -6,6 +6,23 @@ const VALID_TAGS = ['新手友好', '高手局', 'AA制', '免费', '长期约',
 
 // ============ 工具函数 ============
 
+/**
+ * 将云存储 fileID 转换为临时访问 URL（云函数有管理员权限，可访问所有文件）
+ * 用于解决私有文件其他用户无法访问的问题
+ */
+async function resolveFileUrl(fileID) {
+  if (!fileID || !fileID.startsWith('cloud://')) return fileID || '';
+  try {
+    const { fileList } = await cloud.getTempFileURL({ fileList: [fileID] });
+    if (fileList && fileList[0] && fileList[0].tempFileURL) {
+      return fileList[0].tempFileURL;
+    }
+  } catch (e) {
+    console.error('[resolveFileUrl] error:', e.message);
+  }
+  return fileID;
+}
+
 function haversine(lat1, lng1, lat2, lng2) {
   const R = 6371000;
   const toRad = (d) => (d * Math.PI) / 180;
@@ -107,6 +124,17 @@ async function getTeamDetail(teamId, userId) {
     }
   }
 
+  // 将云存储 fileID 转为临时 URL，确保其他用户也能访问
+  const coverImage = await resolveFileUrl(team.coverImage || '');
+  if (leader && leader.avatarUrl && leader.avatarUrl.startsWith('cloud://')) {
+    leader.avatarUrl = await resolveFileUrl(leader.avatarUrl);
+  }
+  for (const m of memberDetails) {
+    if (m.userId && m.userId.avatarUrl && m.userId.avatarUrl.startsWith('cloud://')) {
+      m.userId.avatarUrl = await resolveFileUrl(m.userId.avatarUrl);
+    }
+  }
+
   return {
     _id: team._id,
     sportType: team.sportType,
@@ -121,7 +149,7 @@ async function getTeamDetail(teamId, userId) {
     currentMembers: team.currentMembers,
     fee: team.fee,
     contact: team.contact,
-    coverImage: team.coverImage || '',
+    coverImage: coverImage,
     status: team.status,
     createdAt: team.createdAt,
     leaderId: leader,
@@ -393,6 +421,40 @@ routes.nearby = async (event, wxContext) => {
     }
   }
 
+  // 批量解析云存储 fileID → 临时 URL
+  const allFileIDs = [];
+  for (const lid of leaderIds) {
+    if (leaderMap[lid] && leaderMap[lid].avatarUrl && leaderMap[lid].avatarUrl.startsWith('cloud://')) {
+      allFileIDs.push(leaderMap[lid].avatarUrl);
+    }
+  }
+  for (const t of allTeams) {
+    if (t.coverImage && t.coverImage.startsWith('cloud://')) {
+      allFileIDs.push(t.coverImage);
+    }
+  }
+  if (allFileIDs.length > 0) {
+    try {
+      const { fileList } = await cloud.getTempFileURL({ fileList: [...new Set(allFileIDs)] });
+      const urlMap = {};
+      for (const f of (fileList || [])) {
+        if (f.fileID && f.tempFileURL) urlMap[f.fileID] = f.tempFileURL;
+      }
+      for (const lid of leaderIds) {
+        if (leaderMap[lid] && urlMap[leaderMap[lid].avatarUrl]) {
+          leaderMap[lid].avatarUrl = urlMap[leaderMap[lid].avatarUrl];
+        }
+      }
+      for (const t of allTeams) {
+        if (t.coverImage && urlMap[t.coverImage]) {
+          t.coverImage = urlMap[t.coverImage];
+        }
+      }
+    } catch (e) {
+      console.error('[nearby] getTempFileURL error:', e.message);
+    }
+  }
+
   // 应用层过滤 + 距离计算
   let radiusNum = parseFloat(radius);
   const maxDist = parseFloat(maxDistance);
@@ -497,11 +559,41 @@ routes.myJoined = async (event, wxContext) => {
       } catch (e) {}
       teams.push({
         _id: data._id, sportType: data.sportType, title: data.title, venueName: data.locationName,
-        tags: Array.isArray(data.tags) ? data.tags : [],
+        tags: Array.isArray(data.tags) ? data.tags : [], coverImage: data.coverImage || '',
         startTime: data.startTime, endTime: data.endTime, maxMembers: data.maxMembers,
         currentMembers: data.currentMembers, status: data.status, createdAt: data.createdAt, leaderId: leader,
       });
     } catch (e) {}
+  }
+
+  // 批量解析云存储 fileID → 临时 URL
+  const allFileIDs = [];
+  for (const t of teams) {
+    if (t.leaderId && t.leaderId.avatarUrl && t.leaderId.avatarUrl.startsWith('cloud://')) {
+      allFileIDs.push(t.leaderId.avatarUrl);
+    }
+    if (t.coverImage && t.coverImage.startsWith('cloud://')) {
+      allFileIDs.push(t.coverImage);
+    }
+  }
+  if (allFileIDs.length > 0) {
+    try {
+      const { fileList } = await cloud.getTempFileURL({ fileList: [...new Set(allFileIDs)] });
+      const urlMap = {};
+      for (const f of (fileList || [])) {
+        if (f.fileID && f.tempFileURL) urlMap[f.fileID] = f.tempFileURL;
+      }
+      for (const t of teams) {
+        if (t.leaderId && urlMap[t.leaderId.avatarUrl]) {
+          t.leaderId.avatarUrl = urlMap[t.leaderId.avatarUrl];
+        }
+        if (t.coverImage && urlMap[t.coverImage]) {
+          t.coverImage = urlMap[t.coverImage];
+        }
+      }
+    } catch (e) {
+      console.error('[myJoined] getTempFileURL error:', e.message);
+    }
   }
 
   const pageNum = Math.max(1, parseInt(page));
@@ -853,11 +945,42 @@ routes.myFavorites = async (event, wxContext) => {
       } catch (e) {}
       teams.push({
         _id: t._id, sportType: t.sportType, title: t.title, venueName: t.locationName,
-        tags: Array.isArray(t.tags) ? t.tags : [], startTime: t.startTime, endTime: t.endTime,
+        tags: Array.isArray(t.tags) ? t.tags : [], coverImage: t.coverImage || '',
+        startTime: t.startTime, endTime: t.endTime,
         maxMembers: t.maxMembers, currentMembers: t.currentMembers, status: t.status,
         createdAt: t.createdAt, leaderId: leader,
       });
     } catch (e) {}
+  }
+
+  // 批量解析云存储 fileID → 临时 URL
+  const allFileIDs = [];
+  for (const t of teams) {
+    if (t.leaderId && t.leaderId.avatarUrl && t.leaderId.avatarUrl.startsWith('cloud://')) {
+      allFileIDs.push(t.leaderId.avatarUrl);
+    }
+    if (t.coverImage && t.coverImage.startsWith('cloud://')) {
+      allFileIDs.push(t.coverImage);
+    }
+  }
+  if (allFileIDs.length > 0) {
+    try {
+      const { fileList } = await cloud.getTempFileURL({ fileList: [...new Set(allFileIDs)] });
+      const urlMap = {};
+      for (const f of (fileList || [])) {
+        if (f.fileID && f.tempFileURL) urlMap[f.fileID] = f.tempFileURL;
+      }
+      for (const t of teams) {
+        if (t.leaderId && urlMap[t.leaderId.avatarUrl]) {
+          t.leaderId.avatarUrl = urlMap[t.leaderId.avatarUrl];
+        }
+        if (t.coverImage && urlMap[t.coverImage]) {
+          t.coverImage = urlMap[t.coverImage];
+        }
+      }
+    } catch (e) {
+      console.error('[myFavorites] getTempFileURL error:', e.message);
+    }
   }
 
   const pageNum = Math.max(1, parseInt(page));

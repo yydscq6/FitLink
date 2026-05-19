@@ -1,4 +1,4 @@
-const { db, _ } = require('../utils/db');
+const { db, _, cloud } = require('../utils/db');
 const { getCurrentUser, requireAuth } = require('../utils/auth');
 
 async function createNotification(userId, type, title, content, teamId) {
@@ -54,6 +54,27 @@ routes.list = async (event, wxContext) => {
       userMap[uid] = { _id: u._id, nickname: u.nickname, avatarUrl: u.avatarUrl };
     } catch (e) {
       userMap[uid] = { _id: uid, nickname: '未知', avatarUrl: '' };
+    }
+  }
+
+  // 批量解析用户头像云存储 fileID → 临时 URL
+  const avatarFileIDs = Object.values(userMap)
+    .map(u => u.avatarUrl)
+    .filter(url => url && url.startsWith('cloud://'));
+  if (avatarFileIDs.length > 0) {
+    try {
+      const { fileList } = await cloud.getTempFileURL({ fileList: [...new Set(avatarFileIDs)] });
+      const urlMap = {};
+      for (const f of (fileList || [])) {
+        if (f.fileID && f.tempFileURL) urlMap[f.fileID] = f.tempFileURL;
+      }
+      for (const uid of Object.keys(userMap)) {
+        if (urlMap[userMap[uid].avatarUrl]) {
+          userMap[uid].avatarUrl = urlMap[userMap[uid].avatarUrl];
+        }
+      }
+    } catch (e) {
+      console.error('[comments.list] getTempFileURL error:', e.message);
     }
   }
 

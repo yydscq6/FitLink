@@ -217,6 +217,9 @@ Page({
     wx.cloud.uploadFile({
       cloudPath: cloudPath,
       filePath: filePath,
+      config: {
+        env: { type: 'public' }
+      },
       success: function(res) {
         if (self._destroyed) return;
         if (res.fileID) {
@@ -281,7 +284,7 @@ Page({
         title: this.data.title.trim(),
         description: (this.data.description || "").trim(),
         location: { name: this.data.locationName, address: this.data.locationName, longitude: this.data.location.longitude, latitude: this.data.location.latitude },
-        activityTime: new Date(this.data.activityTime).toISOString(),
+        activityTime: this.data.activityTime,
         maxMembers: parseInt(this.data.maxMembers),
         fee: this.data.fee || "免费",
         contact: (this.data.contact || "").trim(),

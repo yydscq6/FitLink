@@ -67,21 +67,25 @@
   <view wx:if="{{ activeTab === 'created' }}">
     <view wx:if="{{ createdTeams.length > 0 }}" class="team-list">
       <view class="team-card" wx:for="{{ createdTeams }}" wx:key="_id" data-id="{{ item._id }}" bindtap="goToTeam">
-        <view class="team-card-top">
-          <text class="team-sport-badge">{{ item.sportEmoji }}</text>
-          <text class="team-card-title flex-1">{{ item.title }}</text>
-          <text class="team-status-tag status-{{ item.status }}">{{ item.statusName }}</text>
-        </view>
-        <view class="team-card-info">
-          <text class="team-card-venue">{{ item.venueName || '待定' }}</text>
-          <text class="team-card-time">{{ fmt.formatDateTime(item.startTime) }}</text>
-        </view>
-        <view class="team-card-meta">
-          <text class="team-card-members">{{ item.currentMembers }}/{{ item.maxMembers }}人</text>
+        <view class="team-card-accent sport-accent-{{ item.sportType }}"></view>
+        <view class="team-card-inner">
+          <view class="team-card-top">
+            <view class="team-sport-badge">{{ item.sportEmoji }} {{ item.sportName }}</view>
+            <text class="team-status-tag status-{{ item.status }}">{{ item.statusName }}</text>
+          </view>
+          <view class="team-card-title">{{ item.title }}</view>
+          <view class="team-card-info">
+            <text class="team-card-venue">{{ item.venueName || '待定' }}</text>
+            <text class="team-card-time">{{ fmt.formatDateTime(item.startTime) }}</text>
+          </view>
+          <view class="team-card-meta">
+            <text class="team-card-members">👥 {{ item.currentMembers }}/{{ item.maxMembers }}人</text>
+          </view>
         </view>
       </view>
     </view>
     <view wx:else class="empty-section">
+      <text class="empty-section-icon">📋</text>
       <text class="empty-section-text">还没有发起过组局</text>
     </view>
   </view>
@@ -90,21 +94,25 @@
   <view wx:if="{{ activeTab === 'joined' }}">
     <view wx:if="{{ joinedTeams.length > 0 }}" class="team-list">
       <view class="team-card" wx:for="{{ joinedTeams }}" wx:key="_id" data-id="{{ item._id }}" bindtap="goToTeam">
-        <view class="team-card-top">
-          <text class="team-sport-badge">{{ item.sportEmoji }}</text>
-          <text class="team-card-title flex-1">{{ item.title }}</text>
-          <text class="team-status-tag status-{{ item.status }}">{{ item.statusName }}</text>
-        </view>
-        <view class="team-card-info">
-          <text class="team-card-venue">{{ item.venueName || '待定' }}</text>
-          <text class="team-card-time">{{ fmt.formatDateTime(item.startTime) }}</text>
-        </view>
-        <view class="team-card-meta">
-          <text class="team-card-members">{{ item.currentMembers }}/{{ item.maxMembers }}人</text>
+        <view class="team-card-accent sport-accent-{{ item.sportType }}"></view>
+        <view class="team-card-inner">
+          <view class="team-card-top">
+            <view class="team-sport-badge">{{ item.sportEmoji }} {{ item.sportName }}</view>
+            <text class="team-status-tag status-{{ item.status }}">{{ item.statusName }}</text>
+          </view>
+          <view class="team-card-title">{{ item.title }}</view>
+          <view class="team-card-info">
+            <text class="team-card-venue">{{ item.venueName || '待定' }}</text>
+            <text class="team-card-time">{{ fmt.formatDateTime(item.startTime) }}</text>
+          </view>
+          <view class="team-card-meta">
+            <text class="team-card-members">👥 {{ item.currentMembers }}/{{ item.maxMembers }}人</text>
+          </view>
         </view>
       </view>
     </view>
     <view wx:else class="empty-section">
+      <text class="empty-section-icon">🤝</text>
       <text class="empty-section-text">还没有参加过组局</text>
     </view>
   </view>

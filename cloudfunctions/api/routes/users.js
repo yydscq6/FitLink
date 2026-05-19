@@ -1,6 +1,22 @@
-const { db, cloud } = require('../utils/db');
+const { db, _, cloud } = require('../utils/db');
 const { requireAuth } = require('../utils/auth');
 const { refreshActivityStats } = require('../utils/activity');
+
+/**
+ * 将云存储 fileID 转换为临时访问 URL
+ */
+async function resolveFileUrl(fileID) {
+  if (!fileID || !fileID.startsWith('cloud://')) return fileID || '';
+  try {
+    const { fileList } = await cloud.getTempFileURL({ fileList: [fileID] });
+    if (fileList && fileList[0] && fileList[0].tempFileURL) {
+      return fileList[0].tempFileURL;
+    }
+  } catch (e) {
+    console.error('[resolveFileUrl] error:', e.message);
+  }
+  return fileID;
+}
 
 const routes = {};
 
@@ -98,15 +114,55 @@ routes.getById = async (event) => {
   if (!userId) return { code: -1, message: '缺少用户 ID' };
   try {
     const { data } = await db.collection('users').doc(userId).get();
+    const avatarUrl = await resolveFileUrl(data.avatarUrl || '');
+
+    // 查询该用户发起的组局
+    const { data: createdTeams } = await db.collection('teams')
+      .where({ leaderId: userId })
+      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .get();
+
+    // 查询该用户参加的组局（排除自己创建的）
+    const { data: memberships } = await db.collection('team_members')
+      .where({ userId, role: _.neq('leader') })
+      .orderBy('joinedAt', 'desc')
+      .limit(50)
+      .get();
+
+    const joinedTeams = [];
+    for (const m of memberships) {
+      try {
+        const { data: t } = await db.collection('teams').doc(m.teamId).get();
+        joinedTeams.push({
+          _id: t._id, sportType: t.sportType, title: t.title,
+          venueName: t.locationName, startTime: t.startTime,
+          maxMembers: t.maxMembers, currentMembers: t.currentMembers,
+          status: t.status,
+        });
+      } catch (e) {}
+    }
+
     return {
       code: 0,
       data: {
         id: data._id,
         nickname: data.nickname,
-        avatarUrl: data.avatarUrl,
+        avatarUrl: avatarUrl,
         creditScore: data.creditScore,
         sportPrefs: data.sportPrefs || '',
         createdAt: data.createdAt,
+        stats: {
+          createdCount: createdTeams.length,
+          joinedCount: joinedTeams.length,
+        },
+        createdTeams: createdTeams.map(t => ({
+          _id: t._id, sportType: t.sportType, title: t.title,
+          venueName: t.locationName, startTime: t.startTime,
+          maxMembers: t.maxMembers, currentMembers: t.currentMembers,
+          status: t.status,
+        })),
+        joinedTeams: joinedTeams,
       },
     };
   } catch (e) {

@@ -78,6 +78,12 @@ Page({
         sportPrefs = typeof raw === 'string' ? JSON.parse(raw) : (Array.isArray(raw) ? raw : []);
       }
     } catch (e) { sportPrefs = []; }
+    // 修复旧版无效头像路径（http://tmp/ 开头的是已过期的临时路径）
+    if (userInfo.avatarUrl && userInfo.avatarUrl.indexOf('http://tmp/') > -1) {
+      userInfo.avatarUrl = '';
+      app.globalData.userInfo = userInfo;
+      wx.setStorageSync('userInfo', userInfo);
+    }
     // 判断是否需要显示引导（头像为空或昵称为默认值）
     const isDefaultProfile = app.globalData.isLogin && (!userInfo.avatarUrl || userInfo.nickname === '微信用户');
     const guideDismissed = wx.getStorageSync('profileGuideDismissed');
@@ -136,23 +142,64 @@ Page({
       });
   },
 
+  // 头像图片加载失败时回退到默认头像
+  onAvatarError() {
+    if (this.data.userInfo && this.data.userInfo.avatarUrl) {
+      const userInfo = { ...this.data.userInfo, avatarUrl: '' };
+      this.setData({ userInfo });
+      app.globalData.userInfo = userInfo;
+      wx.setStorageSync('userInfo', userInfo);
+      // 异步清除服务端无效头像
+      if (app.globalData.isLogin) {
+        app.request({ url: '/users/me', method: 'PUT', data: { avatarUrl: '' } }).catch(() => {});
+      }
+    }
+  },
+
   // 头像选择（新版 chooseAvatar 接口，返回临时文件路径）
+  // 先上传到云存储获取 fileID，再更新用户信息
   onChooseAvatar(e) {
-    const avatarUrl = e.detail.avatarUrl;
-    if (!avatarUrl) return;
-    app.request({ url: '/users/me', method: 'PUT', data: { avatarUrl } })
-      .then((res) => {
-        if (res.code === 0) {
-          const updated = res.data;
-          app.globalData.userInfo = { ...app.globalData.userInfo, ...updated };
-          wx.setStorageSync('userInfo', app.globalData.userInfo);
-          this.updateUserInfo();
-          wx.showToast({ title: '头像已更新', icon: 'success' });
+    const tempFilePath = e.detail.avatarUrl;
+    if (!tempFilePath) return;
+
+    wx.showLoading({ title: '上传中...' });
+    const cloudPath = 'avatars/' + Date.now() + '-' + Math.random().toString(36).substr(2, 8) + '.jpg';
+
+    wx.cloud.uploadFile({
+      cloudPath,
+      filePath: tempFilePath,
+      config: { env: { type: 'public' } },
+      success: (uploadRes) => {
+        if (!uploadRes.fileID) {
+          wx.hideLoading();
+          wx.showToast({ title: '上传失败', icon: 'none' });
+          return;
         }
-      })
-      .catch(() => {
-        wx.showToast({ title: '更新失败', icon: 'none' });
-      });
+        // 用云存储 fileID 更新用户头像
+        app.request({ url: '/users/me', method: 'PUT', data: { avatarUrl: uploadRes.fileID } })
+          .then((res) => {
+            wx.hideLoading();
+            if (res.code === 0) {
+              const updated = res.data;
+              app.globalData.userInfo = { ...app.globalData.userInfo, ...updated };
+              wx.setStorageSync('userInfo', app.globalData.userInfo);
+              this.updateUserInfo();
+              wx.showToast({ title: '头像已更新', icon: 'success' });
+            } else {
+              wx.showToast({ title: res.message || '更新失败', icon: 'none' });
+            }
+          })
+          .catch(() => {
+            wx.hideLoading();
+            wx.showToast({ title: '更新失败', icon: 'none' });
+          });
+      },
+      fail: (err) => {
+        wx.hideLoading();
+        console.error('[onChooseAvatar] upload fail:', err);
+        wx.showToast({ title: '上传失败，请重试', icon: 'none' });
+      },
+    });
   },
 
   // 昵称输入

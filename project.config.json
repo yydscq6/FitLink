@@ -3,7 +3,12 @@
   "cloudfunctionRoot": "cloudfunctions/",
   "cloudfunctionTemplateRoot": "",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {"value": "server/**", "type": "folder"},
+      {"value": "deploy/**", "type": "folder"},
+      {"value": ".gitignore", "type": "file"},
+      {"value": "README.md", "type": "file"}
+    ],
     "include": []
   },
   "setting": {

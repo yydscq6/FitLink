@@ -243,7 +243,7 @@
   <!-- ——— 智能推荐标识 ——— -->
   <view wx:if="{{ recommendMode && !searchKeyword && teamList.length > 0 }}" class="recommend-header">
     <text class="recommend-icon">✨</text>
-    <text class="recommend-text">智能推荐 · 综合偏好、距离与时间排序</text>
+    <text class="recommend-text">智能推荐 · 综合偏好、时间、距离、名额与活跃度排序</text>
   </view>
 
   <!-- ——— 组局列表 ——— -->

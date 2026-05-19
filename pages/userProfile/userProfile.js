@@ -56,15 +56,20 @@ Page({
         if (!res) throw new Error("服务器无响应");
         if (res.code !== 0) throw new Error(res.message || "加载失败");
         var d = res.data;
-        var prefs = [];
+        var rawPrefs = [];
         if (d.sportPrefs) {
           var raw = d.sportPrefs;
-          if (typeof raw === "string") { try { prefs = JSON.parse(raw); } catch(e){} }
-          else if (Array.isArray(raw)) prefs = raw;
+          if (typeof raw === "string") { try { rawPrefs = JSON.parse(raw); } catch(e){} }
+          else if (Array.isArray(raw)) rawPrefs = raw;
         }
+        // 将英文运动类型值映射为中文名显示
+        var prefDisplay = rawPrefs.map(function(val) {
+          var found = ALL_PREFS.find(function(p) { return p.value === val; });
+          return found ? (found.emoji + ' ' + found.name) : val;
+        });
         self.setData({
           userInfo: d,
-          sportPrefs: prefs,
+          sportPrefs: prefDisplay,
           stats: d.stats || { createdCount: 0, joinedCount: 0 },
           createdTeams: (d.createdTeams || []).map(function(t) {
             return {
