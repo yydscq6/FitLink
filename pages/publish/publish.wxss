@@ -260,3 +260,21 @@
   color: var(--text-hint);
   font-weight: 400;
 }
+
+/* 结束时间切换 */
+.end-time-toggle {
+  margin-top: 12rpx;
+  padding: 8rpx 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.end-time-toggle:active {
+  opacity: 0.6;
+}
+
+.end-time-toggle-text {
+  font-size: 24rpx;
+  color: var(--primary-color);
+  font-weight: 500;
+  letter-spacing: 0.5rpx;
+}

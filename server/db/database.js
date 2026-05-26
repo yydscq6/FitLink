@@ -164,6 +164,13 @@ async function initDatabase() {
     // 字段已存在则忽略
   }
 
+  // 用户最后活跃时间
+  try {
+    sqlDb.run("ALTER TABLE users ADD COLUMN lastActiveAt TEXT");
+  } catch (e) {
+    // 字段已存在则忽略
+  }
+
   // 用户软删除标记
   try {
     sqlDb.run("ALTER TABLE users ADD COLUMN isDeleted INTEGER DEFAULT 0");
@@ -240,6 +247,7 @@ async function initDatabase() {
   sqlDb.run('CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)');
   sqlDb.run('CREATE INDEX IF NOT EXISTS idx_reports_target ON reports(targetType, targetId)');
   sqlDb.run('CREATE INDEX IF NOT EXISTS idx_users_deleted ON users(isDeleted)');
+  sqlDb.run('CREATE INDEX IF NOT EXISTS idx_users_active ON users(lastActiveAt)');
 
   saveDatabase();
   console.log('[数据库] 初始化完成，路径:', DB_PATH);

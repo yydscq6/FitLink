@@ -4,6 +4,53 @@ const { calcActiveLevel, calcActiveMatch, refreshActivityStats } = require('../u
 
 const VALID_TAGS = ['新手友好', '高手局', 'AA制', '免费', '长期约', '周末常约', '工作日约', '女性专场', '男性专场', '学生局', '养生局', '竞技局'];
 
+/**
+ * 自动将过期的招募中组局标记为已结束
+ * 云函数没有 cron，所以在查询时惰性执行
+ * @param {boolean} force - 是否强制检查（默认 true，高频调用时可设为 false 节约配额）
+ */
+let _lastAutoExpire = 0;
+async function autoExpireTeams(force) {
+  const now = Date.now();
+  // 每 5 分钟最多执行一次（云函数共享实例可能频繁调用）
+  if (!force && now - _lastAutoExpire < 5 * 60 * 1000) return;
+  _lastAutoExpire = now;
+  try {
+    const nowISO = new Date().toISOString();
+    // 查询已过期但仍在招募中的组局
+    const { data: expired } = await db.collection('teams').where({
+      status: 'recruiting',
+      endTime: _.lt(nowISO),
+    }).limit(50).get();
+
+    for (const t of expired) {
+      try {
+        await db.collection('teams').doc(t._id).update({
+          data: { status: 'ended', updatedAt: db.serverDate() },
+        });
+        // 为成员加信誉分
+        const { data: members } = await db.collection('team_members').where({ teamId: t._id }).get();
+        for (const m of members) {
+          try {
+            const { data: u } = await db.collection('users').doc(m.userId).get();
+            const creditAdd = m.role === 'leader' ? 2 : 1;
+            await db.collection('users').doc(m.userId).update({
+              data: { creditScore: Math.min(200, (u.creditScore || 100) + creditAdd), updatedAt: db.serverDate() },
+            });
+          } catch (e) {}
+        }
+      } catch (e) {
+        console.error('[autoExpireTeams] error for team', t._id, e.message);
+      }
+    }
+    if (expired.length > 0) {
+      console.log('[autoExpireTeams] expired', expired.length, 'teams');
+    }
+  } catch (e) {
+    console.error('[autoExpireTeams] query error:', e.message);
+  }
+}
+
 // ============ 工具函数 ============
 
 /**
@@ -343,6 +390,9 @@ const routes = {};
 
 // GET /teams/nearby
 routes.nearby = async (event, wxContext) => {
+  // 惰性过期检测（不阻塞主流程）
+  autoExpireTeams(false).catch(() => {});
+
   const { longitude, latitude, radius = 5000, page = 1, pageSize = 20, sportType, timeFilter, minSpots, maxDistance, tag, mode } = event;
   const lng = parseFloat(longitude);
   const lat = parseFloat(latitude);
@@ -636,7 +686,16 @@ routes.create = async (event, wxContext) => {
   if (isNaN(max) || max < 2 || max > 100) return { code: -1, message: '人数上限需在2-100之间' };
 
   const start = new Date(activityTime);
-  const end = new Date(start.getTime() + 2 * 3600 * 1000);
+  // 支持自定义结束时间，否则默认 +2 小时
+  let end;
+  if (event.endTime) {
+    end = new Date(event.endTime);
+    if (isNaN(end.getTime()) || end <= start) {
+      end = new Date(start.getTime() + 2 * 3600 * 1000);
+    }
+  } else {
+    end = new Date(start.getTime() + 2 * 3600 * 1000);
+  }
   let filteredTags = [];
   if (Array.isArray(tags) && tags.length > 0) {
     filteredTags = tags.filter(t => VALID_TAGS.includes(t)).slice(0, 5);
@@ -869,7 +928,15 @@ routes.update = async (event, wxContext) => {
     const start = new Date(activityTime);
     if (!isNaN(start.getTime())) {
       updates.startTime = start.toISOString();
-      updates.endTime = new Date(start.getTime() + 2 * 3600 * 1000).toISOString();
+      // 支持自定义结束时间
+      if (event.endTime) {
+        const customEnd = new Date(event.endTime);
+        updates.endTime = (!isNaN(customEnd.getTime()) && customEnd > start)
+          ? customEnd.toISOString()
+          : new Date(start.getTime() + 2 * 3600 * 1000).toISOString();
+      } else {
+        updates.endTime = new Date(start.getTime() + 2 * 3600 * 1000).toISOString();
+      }
     }
   }
   if (maxMembers !== undefined) {

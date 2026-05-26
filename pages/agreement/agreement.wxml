@@ -1,4 +1,13 @@
 <!-- pages/agreement/agreement.wxml -->
 <view class="container">
-  <view class="content">{{content}}</view>
+  <view class="header-card">
+    <text class="header-icon">{{ type === 'privacy' ? '🔒' : '📜' }}</text>
+    <text class="header-title">{{ title }}</text>
+  </view>
+  <view class="content-card">
+    <text class="content">{{ content }}</text>
+  </view>
+  <view class="footer">
+    <text class="footer-text">如有疑问，请通过「设置 → 意见反馈」联系我们</text>
+  </view>
 </view>

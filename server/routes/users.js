@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../db/database');
 const logger = require('../utils/logger');
 const { loginLimiter, writeLimiter, checkSensitiveEnhanced } = require('../utils/security');
+const { trackActivity } = require('../utils/activity');
 
 const router = express.Router();
 
@@ -87,6 +88,9 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     // 生成 JWT
     const token = signToken(user.id);
+
+    // 追踪用户活跃
+    trackActivity(user.id);
 
     // 返回用户信息（脱敏）
     const userInfo = {

@@ -78,6 +78,16 @@
           <text class="picker-arrow">›</text>
         </view>
       </picker>
+      <!-- 结束时间 -->
+      <view class="end-time-toggle" bindtap="onToggleEndTime">
+        <text class="end-time-toggle-text">{{ showEndTime ? '隐藏结束时间' : '自定义结束时间（默认2小时）' }}</text>
+      </view>
+      <picker wx:if="{{showEndTime}}" mode="multiSelector" bindchange="onEndTimeChange" bindcolumnchange="onEndTimeColumnChange" value="{{endTimeIndex}}" range="{{timeArray}}">
+        <view class="picker">
+          <text class="picker-text {{activityEndTime ? 'has-value' : 'placeholder'}}">{{activityEndTime || '选择结束时间'}}</text>
+          <text class="picker-arrow">›</text>
+        </view>
+      </picker>
     </view>
 
     <!-- 人数 -->

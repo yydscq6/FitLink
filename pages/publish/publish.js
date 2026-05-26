@@ -72,9 +72,12 @@ Page({
     location: null,
     locationName: '',
     activityTime: '',
+    activityEndTime: '',
     // 时间选择器
     timeArray: [DATE_OPTIONS.map(d => d.label), TIME_OPTIONS],
     timeIndex: [0, 16], // 默认：今天 14:00
+    endTimeIndex: [0, 18], // 默认：今天 16:00
+    showEndTime: false, // 是否显示结束时间选择器
     maxMembers: '',
     fee: '免费',
     contact: '',
@@ -156,10 +159,15 @@ Page({
     const idx = e.detail.value; // [dateIndex, timeIndex]
     const dateOpt = DATE_OPTIONS[idx[0]];
     const timeStr = TIME_OPTIONS[idx[1]];
+    const newTime = `${dateOpt.value} ${timeStr}`;
     this.setData({
       timeIndex: idx,
-      activityTime: `${dateOpt.value} ${timeStr}`,
+      activityTime: newTime,
     });
+    // 自动同步结束时间（默认开始时间 + 2 小时）
+    if (!this.data.activityEndTime || this.data.showEndTime === false) {
+      this._syncEndTimeFromStart(idx);
+    }
   },
 
   onTimeColumnChange(e) {
@@ -168,6 +176,53 @@ Page({
     const timeIndex = [...this.data.timeIndex];
     timeIndex[column] = value;
     this.setData({ timeIndex });
+  },
+
+  /**
+   * 切换结束时间选择器显示
+   */
+  onToggleEndTime() {
+    this.setData({ showEndTime: !this.data.showEndTime });
+    if (this.data.showEndTime && !this.data.activityEndTime) {
+      this._syncEndTimeFromStart(this.data.timeIndex);
+    }
+  },
+
+  onEndTimeChange(e) {
+    const idx = e.detail.value;
+    const dateOpt = DATE_OPTIONS[idx[0]];
+    const timeStr = TIME_OPTIONS[idx[1]];
+    this.setData({
+      endTimeIndex: idx,
+      activityEndTime: `${dateOpt.value} ${timeStr}`,
+    });
+  },
+
+  onEndTimeColumnChange(e) {
+    const { column, value } = e.detail;
+    const endTimeIndex = [...this.data.endTimeIndex];
+    endTimeIndex[column] = value;
+    this.setData({ endTimeIndex });
+  },
+
+  /**
+   * 根据开始时间自动计算结束时间（+2小时）
+   */
+  _syncEndTimeFromStart(startIdx) {
+    const dateIdx = startIdx[0];
+    const timeIdx = startIdx[1];
+    let endHour = timeIdx + 4; // +2小时（每个间隔30分钟，所以+4）
+    let endDateIdx = dateIdx;
+    if (endHour >= TIME_OPTIONS.length) {
+      endHour -= TIME_OPTIONS.length;
+      endDateIdx = Math.min(dateIdx + 1, DATE_OPTIONS.length - 1);
+    }
+    const endTimeStr = TIME_OPTIONS[endHour];
+    const dateOpt = DATE_OPTIONS[endDateIdx];
+    this.setData({
+      endTimeIndex: [endDateIdx, endHour],
+      activityEndTime: `${dateOpt.value} ${endTimeStr}`,
+    });
   },
 
   onMaxMembersInput(e) {
@@ -336,6 +391,7 @@ Page({
         latitude: location.latitude,
       },
       activityTime: activityTime,
+      endTime: this.data.showEndTime && this.data.activityEndTime ? this.data.activityEndTime : '',
       maxMembers: parseInt(maxMembers),
       fee: fee || '免费',
       contact: (contact || '').trim(),

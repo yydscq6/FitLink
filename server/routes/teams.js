@@ -7,6 +7,7 @@ const logger = require('../utils/logger');
 const { sendStatusChange, getMiniProgramQRCode } = require('../utils/wechatMessage');
 const { creditForTeamCompleted } = require('../utils/credit');
 const { cache } = require('../utils/cache');
+const { trackActivity, calcActiveLevel, calcActiveMatch } = require('../utils/activity');
 const router = express.Router();
 
 // ============== 高级筛选：GET /api/teams/nearby 增强 ==============
@@ -27,14 +28,17 @@ function formatDistance(meters) {
 }
 
 /**
- * 推荐算法：综合评分
- * 四个维度加权：运动偏好匹配 > 时间紧迫度 > 距离远近 > 剩余名额
+ * 推荐算法：综合评分（五维加权）
+ * 维度：运动偏好匹配 > 时间紧迫度 > 距离远近 > 剩余名额 > 活跃度匹配
  *
- * @param {object} team   - 组局对象（含 distance, spotsLeft, startTime, sportType, status）
- * @param {string[]} prefs - 用户运动偏好列表（如 ['basketball','running']）
- * @returns {number}      - 综合得分（越高越推荐）
+ * 公式：(0.5 + timeBonus + distScore + spotsBonus + activeMatch × 0.3) × prefMultiplier
+ *
+ * @param {object} team      - 组局对象（含 distance, spotsLeft, startTime, sportType, maxMembers, leaderCreditScore, createdAt）
+ * @param {string[]} prefs   - 用户运动偏好列表（如 ['basketball','running']）
+ * @param {'high'|'mid'|'low'|'dormant'} [activeLevel='mid'] - 用户活跃等级
+ * @returns {number}         - 综合得分（越高越推荐）
  */
-function calcRecommendScore(team, prefs) {
+function calcRecommendScore(team, prefs, activeLevel) {
   // 1) 运动偏好匹配（权重最高，鼓励用户尝试偏好运动）
   const prefMultiplier = (prefs.length > 0 && prefs.indexOf(team.sportType) > -1) ? 1.5 : 1.0;
 
@@ -65,8 +69,11 @@ function calcRecommendScore(team, prefs) {
   const spotsRatio = team.maxMembers > 0 ? team.spotsLeft / team.maxMembers : 0;
   const spotsBonus = Math.min(spotsRatio, 1) * 0.15;
 
-  // 综合得分（0~2.65 范围）
-  const score = (0.5 + timeBonus + distScore + spotsBonus) * prefMultiplier;
+  // 5) 活跃度匹配（第五维：根据用户活跃等级差异化推荐策略）
+  const activeMatch = calcActiveMatch(team, activeLevel || 'mid');
+
+  // 综合得分（0~3.15 范围）
+  const score = (0.5 + timeBonus + distScore + spotsBonus + activeMatch * 0.3) * prefMultiplier;
 
   return Math.round(score * 1000) / 1000; // 保留3位小数
 }
@@ -108,20 +115,27 @@ router.get('/nearby', (req, res) => {
 
     const isRecommended = mode === 'recommended';
 
-    // 解析用户身份 & 运动偏好（推荐模式需要）
+    // 解析用户身份 & 运动偏好 & 活跃等级（推荐模式需要）
     let userId = null;
     let userPrefs = [];
+    let userActiveLevel = 'mid';
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
         const jwt = require('jsonwebtoken');
         const decoded = jwt.verify(authHeader.slice(7), process.env.JWT_SECRET || 'sport-mini-secret');
         userId = decoded.userId;
-        // 获取用户运动偏好
+        // 追踪用户活跃
+        trackActivity(userId);
+        // 获取用户运动偏好 & 活跃等级（推荐模式需要）
         if (isRecommended) {
-          const user = db.prepare('SELECT sportPrefs FROM users WHERE id = ?').get(userId);
-          if (user && user.sportPrefs) {
-            try { userPrefs = JSON.parse(user.sportPrefs); } catch (e) { userPrefs = []; }
+          const user = db.prepare('SELECT id, sportPrefs, lastActiveAt FROM users WHERE id = ?').get(userId);
+          if (user) {
+            if (user.sportPrefs) {
+              try { userPrefs = JSON.parse(user.sportPrefs); } catch (e) { userPrefs = []; }
+            }
+            // 计算第五维：活跃度等级
+            userActiveLevel = calcActiveLevel(user);
           }
         }
       } catch (e) {}
@@ -193,9 +207,10 @@ router.get('/nearby', (req, res) => {
         spotsLeft: t.maxMembers - t.currentMembers,
         leaderId: { _id: t.leaderId, nickname: t.leaderNickname, avatarUrl: t.leaderAvatar, creditScore: t.leaderCredit },
       };
-      // 推荐模式计算综合评分
+      // 推荐模式计算五维综合评分
       if (isRecommended) {
-        item.score = calcRecommendScore(item, userPrefs);
+        item.leaderCreditScore = t.leaderCredit;
+        item.score = calcRecommendScore(item, userPrefs, userActiveLevel);
       }
       return item;
     }).filter(t => t.distance <= radiusNum);
@@ -219,7 +234,11 @@ router.get('/nearby', (req, res) => {
     const total = enriched.length;
     const start = (pageNum - 1) * sizeNum;
     const list = enriched.slice(start, start + sizeNum);
-    const result = { code: 0, data: { data: { list, pagination: { page: pageNum, pageSize: sizeNum, total }, favoriteIds, mode: isRecommended ? 'recommended' : 'distance' } } };
+    const modeData = { list, pagination: { page: pageNum, pageSize: sizeNum, total }, favoriteIds, mode: isRecommended ? 'recommended' : 'distance' };
+    if (isRecommended && userId) {
+      modeData.activeLevel = userActiveLevel;
+    }
+    const result = { code: 0, data: { data: modeData } };
     cache.set(cacheKey, result, 15000);   // 缓存 15 秒
     res.json(result);
   } catch (err) {
@@ -306,6 +325,7 @@ router.get('/:id', (req, res) => {
     }
     // 收藏状态不缓存（用户维度）
     if (userId) {
+      trackActivity(userId);
       const fav = db.prepare('SELECT id FROM favorites WHERE userId = ? AND teamId = ?').get(userId, teamId);
       team = { ...team, isFavorited: !!fav };
     } else {
@@ -321,7 +341,7 @@ router.get('/:id', (req, res) => {
 // POST /api/teams
 router.post('/', authMiddleware, writeLimiter, async (req, res) => {
   try {
-    const { sportType, title, description, location, activityTime, maxMembers, fee, contact, coverImage, tags } = req.body;
+    const { sportType, title, description, location, activityTime, endTime, maxMembers, fee, contact, coverImage, tags, forceCreate } = req.body;
     if (!title || !title.trim()) return res.json({ code: -1, message: '请输入标题' });
     if (title.trim().length > 50) return res.json({ code: -1, message: '标题不能超过50字' });
 
@@ -337,7 +357,36 @@ router.post('/', authMiddleware, writeLimiter, async (req, res) => {
     const max = parseInt(maxMembers);
     if (isNaN(max) || max < 2 || max > 100) return res.json({ code: -1, message: '人数上限需在2-100之间' });
     const start = new Date(activityTime);
-    const end = new Date(start.getTime() + 2 * 3600 * 1000);
+
+    // 计算结束时间：支持自定义 endTime，否则默认 +2小时
+    let end;
+    if (endTime) {
+      end = new Date(endTime);
+      if (isNaN(end.getTime()) || end <= start) {
+        return res.json({ code: -1, message: '结束时间必须晚于开始时间' });
+      }
+    } else {
+      end = new Date(start.getTime() + 2 * 3600 * 1000);
+    }
+
+    // 重复组局检测（同运动类型 + ±4小时窗口 + 招募中）
+    if (!forceCreate) {
+      const windowStart = new Date(start.getTime() - 4 * 3600 * 1000).toISOString();
+      const windowEnd = new Date(start.getTime() + 4 * 3600 * 1000).toISOString();
+      const duplicate = db.prepare(
+        "SELECT id, title, startTime FROM teams WHERE leaderId = ? AND sportType = ? AND status = 'recruiting' AND startTime >= ? AND startTime <= ? LIMIT 1"
+      ).get(req.user.id, sportType || 'other', windowStart, windowEnd);
+      if (duplicate) {
+        const dupTime = new Date(duplicate.startTime);
+        const timeStr = `${dupTime.getMonth() + 1}月${dupTime.getDate()}日 ${String(dupTime.getHours()).padStart(2, '0')}:${String(dupTime.getMinutes()).padStart(2, '0')}`;
+        return res.json({
+          code: -2,
+          message: `你在 ${timeStr} 已有一个「${duplicate.title}」的组局，是否仍要创建？`,
+          data: { duplicateId: duplicate.id },
+        });
+      }
+    }
+
     // 标签：校验并序列化
     const VALID_TAGS = ['新手友好', '高手局', 'AA制', '免费', '长期约', '周末常约', '工作日约', '女性专场', '男性专场', '学生局', '养生局', '竞技局'];
     let tagsStr = '[]';
@@ -349,6 +398,7 @@ router.post('/', authMiddleware, writeLimiter, async (req, res) => {
       "INSERT INTO teams (leaderId, sportType, title, description, locationName, locationAddr, longitude, latitude, startTime, endTime, maxMembers, fee, contact, coverImage, tags, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'recruiting')"
     ).run(req.user.id, sportType || 'other', title.trim(), (description || '').trim(), location.name || '', location.address || location.name || '', location.longitude, location.latitude, start.toISOString(), end.toISOString(), max, fee || '免费', (contact || '').trim(), (coverImage || '').trim(), tagsStr);
     db.prepare("INSERT INTO team_members (teamId, userId, role) VALUES (?, ?, 'leader')").run(info.lastInsertRowid, req.user.id);
+    trackActivity(req.user.id);
     const team = getTeamDetail(info.lastInsertRowid, req.user.id);
     cache.delByPrefix('nearby');   // 新组局，刷新附近列表缓存
     res.json({ code: 0, data: team, message: '发布成功' });
@@ -363,13 +413,32 @@ router.post('/:id/join', authMiddleware, writeLimiter, (req, res) => {
   try {
     const teamId = parseInt(req.params.id);
     const userId = req.user.id;
+    const { forceJoin } = req.body || {};
     const team = db.prepare('SELECT * FROM teams WHERE id = ?').get(teamId);
     if (!team) return res.json({ code: -1, message: '组局不存在' });
     if (team.status !== 'recruiting') return res.json({ code: -1, message: '该组局不在招募中' });
     if (team.currentMembers >= team.maxMembers) return res.json({ code: -1, message: '人数已满' });
     const existing = db.prepare('SELECT * FROM team_members WHERE teamId = ? AND userId = ?').get(teamId, userId);
     if (existing) return res.json({ code: -1, message: '你已经加入了该组局' });
+
+    // 时间冲突检测（可跳过）
+    if (!forceJoin && team.startTime && team.endTime) {
+      const conflict = db.prepare(
+        "SELECT t.id, t.title, t.startTime, t.endTime FROM team_members tm JOIN teams t ON tm.teamId = t.id WHERE tm.userId = ? AND t.id != ? AND t.status = 'recruiting' AND t.startTime < ? AND t.endTime > ? LIMIT 1"
+      ).get(userId, teamId, team.endTime, team.startTime);
+      if (conflict) {
+        const ct = new Date(conflict.startTime);
+        const timeStr = `${ct.getMonth() + 1}月${ct.getDate()}日 ${String(ct.getHours()).padStart(2, '0')}:${String(ct.getMinutes()).padStart(2, '0')}`;
+        return res.json({
+          code: -2,
+          message: `你已加入的「${conflict.title}」（${timeStr}）与此组局时间冲突，是否仍要加入？`,
+          data: { conflictId: conflict.id },
+        });
+      }
+    }
+
     db.prepare("INSERT INTO team_members (teamId, userId, role) VALUES (?, ?, 'member')").run(teamId, userId);
+    trackActivity(userId);
     const newCount = team.currentMembers + 1;
     // 满员自动关闭招募
     if (newCount >= team.maxMembers) {
@@ -383,6 +452,21 @@ router.post('/:id/join', authMiddleware, writeLimiter, (req, res) => {
         ? req.user.nickname + ' 加入了「' + team.title + '」，组局已满员！'
         : req.user.nickname + ' 加入了「' + team.title + '」';
       createNotification(team.leaderId, 'join', '新成员加入', msg, teamId);
+    }
+    // 满员时通知全体队员（组局成功 🎉）
+    if (newCount >= team.maxMembers) {
+      const allMembers = db.prepare('SELECT userId FROM team_members WHERE teamId = ?').all(teamId);
+      allMembers.forEach(m => {
+        if (m.userId !== userId) {
+          createNotification(
+            m.userId,
+            'match_success',
+            '🎉 组局成功',
+            '「' + team.title + '」已满员 ' + newCount + '/' + team.maxMembers + '，活动即将开始！',
+            teamId,
+          );
+        }
+      });
     }
     cache.del(`team:${teamId}`);
     cache.delByPrefix('nearby');
@@ -505,7 +589,7 @@ router.put('/:id', authMiddleware, writeLimiter, async (req, res) => {
     if (team.leaderId !== userId) return res.json({ code: -1, message: '只有队长才能编辑组局' });
     if (team.status !== 'recruiting') return res.json({ code: -1, message: '只有招募中的组局才能编辑' });
 
-    const { title, description, location, activityTime, maxMembers, fee, contact, coverImage, tags } = req.body;
+    const { title, description, location, activityTime, endTime, maxMembers, fee, contact, coverImage, tags } = req.body;
 
     // 验证标题
     if (title !== undefined) {
@@ -541,9 +625,24 @@ router.put('/:id', authMiddleware, writeLimiter, async (req, res) => {
     if (activityTime !== undefined) {
       const start = new Date(activityTime);
       if (!isNaN(start.getTime())) {
-        const end = new Date(start.getTime() + 2 * 3600 * 1000);
+        let end;
+        if (endTime) {
+          end = new Date(endTime);
+          if (isNaN(end.getTime()) || end <= start) {
+            return res.json({ code: -1, message: '结束时间必须晚于开始时间' });
+          }
+        } else {
+          end = new Date(start.getTime() + 2 * 3600 * 1000);
+        }
         updates.push('startTime = ?', 'endTime = ?');
         params.push(start.toISOString(), end.toISOString());
+      }
+    } else if (endTime !== undefined) {
+      // 仅修改结束时间，不改开始时间
+      const end = new Date(endTime);
+      if (!isNaN(end.getTime())) {
+        updates.push('endTime = ?');
+        params.push(end.toISOString());
       }
     }
     if (maxMembers !== undefined) { updates.push('maxMembers = ?'); params.push(parseInt(maxMembers)); }
